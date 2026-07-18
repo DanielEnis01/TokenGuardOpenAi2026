@@ -20,7 +20,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <div className="app-root flex h-screen overflow-hidden" style={{ background: 'var(--bg-page)' }}>
+    <div className="app-root dashboard-glass flex h-screen overflow-hidden" style={{ background: 'var(--bg-page)' }}>
       <div
         className="flex w-12 shrink-0 flex-col items-center py-4"
         style={{

@@ -92,7 +92,7 @@ export default function Monitor() {
 
   return (
     <AppShell>
-      <div className="space-y-5">
+      <div className="monitor-page space-y-5">
         {primaryActiveSpiral ? (
           <SpiralDecisionDialog
             open={isSpiralDialogOpen}
@@ -110,13 +110,13 @@ export default function Monitor() {
 
         <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p style={{ font: 'var(--font-caption)', color: 'var(--text-muted)' }}>Live Monitor</p>
-            <h1 className="mt-1" style={{ font: '600 28px/1.1 var(--font-family-sans)' }}>
+            <p className="liquid-eyebrow" style={{ font: 'var(--font-caption)', color: 'var(--text-muted)' }}>Live Monitor</p>
+            <h1 className="liquid-heading mt-1">
               Session telemetry and spiral intervention
             </h1>
           </div>
           <div
-            className="inline-flex w-fit items-center gap-2 rounded-full px-3 py-2"
+            className="liquid-status inline-flex w-fit items-center gap-2 rounded-full px-3 py-2"
             style={{
               background: 'var(--bg-card)',
               border: '1px solid var(--border-subtle)',
@@ -533,7 +533,7 @@ function LiveSessionPanel({
 
   return (
     <section
-      className="rounded-[22px] p-5 sm:p-6"
+      className="liquid-session rounded-[22px] p-5 sm:p-6"
       style={{
         background: 'var(--bg-card)',
         border: '1px solid var(--border-subtle)',
