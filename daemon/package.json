@@ -1,0 +1,24 @@
+{
+  "name": "tokenguard-daemon",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "start": "node --experimental-strip-types src/index.ts",
+    "dev": "node --watch --experimental-strip-types src/index.ts",
+    "check": "tsc --noEmit -p tsconfig.json",
+    "smoke:spiral": "node scripts/smoke-spiral.mjs",
+    "smoke:enforcement": "node scripts/smoke-enforcement.mjs"
+  },
+  "engines": {
+    "node": ">=22.14.0"
+  },
+  "dependencies": {
+    "ws": "8.18.1"
+  },
+  "devDependencies": {
+    "@types/node": "24.6.1",
+    "@types/ws": "8.18.1",
+    "typescript": "5.9.3"
+  }
+}

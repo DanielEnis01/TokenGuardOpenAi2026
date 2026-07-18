@@ -1,0 +1,440 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.wrap{padding:2rem 0;font-family:'JetBrains Mono',monospace}
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+:root{
+--tg-bg:#09090E;
+--tg-surface:#0F0F17;
+--tg-surface2:#14141F;
+--tg-border:#ffffff0f;
+--tg-border2:#ffffff1a;
+--tg-text:#E2E2F0;
+--tg-muted:#6B6B85;
+--tg-hint:#3A3A52;
+--tg-red:#F25757;
+--tg-orange:#F27C35;
+--tg-amber:#F2C94C;
+--tg-green:#3DDB8A;
+--tg-teal:#2DD4BF;
+--tg-blue:#4D9FFF;
+--tg-purple:#9B8FFF;
+--r:8px;--rl:12px;
+}
+
+.section{margin-bottom:2.5rem}
+.section-label{font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:600;letter-spacing:.12em;color:var(--tg-muted);text-transform:uppercase;margin-bottom:1rem;padding-bottom:.5rem;border-bottom:1px solid var(--tg-border)}
+
+.brand-hero{
+  background:var(--tg-bg);
+  border-radius:var(--rl);
+  border:1px solid var(--tg-border2);
+  padding:2.5rem;
+  display:flex;align-items:center;gap:2rem;
+  margin-bottom:2rem;
+  position:relative;overflow:hidden;
+}
+.brand-hero::before{
+  content:'';position:absolute;inset:0;
+  background:
+    repeating-linear-gradient(0deg,transparent,transparent 39px,var(--tg-border) 39px,var(--tg-border) 40px),
+    repeating-linear-gradient(90deg,transparent,transparent 39px,var(--tg-border) 39px,var(--tg-border) 40px);
+  opacity:.4;
+}
+.brand-hero::after{
+  content:'';position:absolute;
+  top:-60px;right:-60px;
+  width:280px;height:280px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(242,87,87,.12) 0%,rgba(242,87,87,.04) 45%,transparent 70%);
+}
+.hero-logo{position:relative;z-index:1;display:flex;align-items:center;gap:14px}
+.hero-mark{
+  width:48px;height:48px;border-radius:12px;
+  background:var(--tg-surface2);
+  border:1px solid var(--tg-border2);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;overflow:hidden;
+}
+.hero-mark::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(242,87,87,.15),transparent 60%);
+}
+.hero-mark-inner{
+  width:20px;height:20px;position:relative;z-index:1;
+}
+.hero-wordmark{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:var(--tg-text);letter-spacing:-.5px}
+.hero-wordmark span{color:var(--tg-red)}
+.hero-tagline{font-size:11px;color:var(--tg-muted);letter-spacing:.05em;margin-top:3px}
+.hero-right{position:relative;z-index:1;margin-left:auto}
+.hero-version{
+  font-size:10px;padding:4px 12px;border-radius:99px;
+  border:1px solid var(--tg-border2);color:var(--tg-muted);
+  background:var(--tg-surface);
+}
+
+.palette-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:1rem}
+.swatch{border-radius:6px;height:48px;position:relative}
+.swatch-label{font-size:9px;color:var(--tg-muted);margin-top:5px;text-align:center;letter-spacing:.04em}
+
+.role-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1rem}
+.role-card{
+  background:var(--tg-surface);border:1px solid var(--tg-border);
+  border-radius:var(--r);padding:14px;
+}
+.role-swatch{height:32px;border-radius:6px;margin-bottom:10px}
+.role-name{font-size:11px;font-weight:500;color:var(--tg-text);margin-bottom:2px;font-family:'Space Grotesk',sans-serif}
+.role-hex{font-size:10px;color:var(--tg-muted)}
+.role-use{font-size:10px;color:var(--tg-hint);margin-top:4px;line-height:1.4}
+
+.type-rows{display:flex;flex-direction:column;gap:14px}
+.type-item{display:flex;align-items:baseline;gap:16px;padding-bottom:14px;border-bottom:1px solid var(--tg-border)}
+.type-item:last-child{border-bottom:none}
+.type-meta{width:120px;flex-shrink:0}
+.type-meta-name{font-size:10px;color:var(--tg-muted);margin-bottom:2px;text-transform:uppercase;letter-spacing:.08em}
+.type-meta-spec{font-size:9px;color:var(--tg-hint)}
+.type-sample{flex:1}
+
+.texture-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.texture-card{
+  border-radius:var(--rl);border:1px solid var(--tg-border);
+  height:120px;position:relative;overflow:hidden;
+}
+.texture-label{
+  position:absolute;bottom:0;left:0;right:0;
+  padding:8px 12px;
+  background:var(--tg-bg);
+  border-top:1px solid var(--tg-border);
+  font-size:10px;color:var(--tg-muted);
+  letter-spacing:.06em;text-transform:uppercase;
+}
+
+.comp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.comp-preview{
+  background:var(--tg-surface);border:1px solid var(--tg-border);
+  border-radius:var(--r);padding:14px;
+  display:flex;flex-direction:column;gap:10px;
+}
+.comp-name{font-size:10px;color:var(--tg-muted);letter-spacing:.06em;text-transform:uppercase}
+
+.badge-row{display:flex;flex-wrap:wrap;gap:6px}
+.badge{font-size:10px;padding:3px 8px;border-radius:99px;font-family:'Space Grotesk',sans-serif;font-weight:500}
+
+.mini-chart{height:40px;position:relative}
+.mini-bar{
+  position:absolute;bottom:0;width:8px;border-radius:2px 2px 0 0;
+  background:var(--tg-hint);
+}
+.mini-bar.hot{background:var(--tg-red)}
+.mini-bar.warm{background:var(--tg-orange)}
+.mini-bar.ok{background:var(--tg-green)}
+
+.alert-mini{
+  background:rgba(242,87,87,.08);
+  border:1px solid rgba(242,87,87,.25);
+  border-radius:var(--r);padding:8px 10px;
+  font-size:10px;color:var(--tg-red);
+  font-family:'Space Grotesk',sans-serif;
+}
+.toggle-mini{
+  width:32px;height:17px;border-radius:99px;
+  background:var(--tg-green);position:relative;
+}
+.toggle-mini::after{
+  content:'';position:absolute;
+  top:2.5px;right:2.5px;
+  width:12px;height:12px;
+  border-radius:50%;background:#09090E;
+}
+
+.motion-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.motion-chip{
+  font-size:10px;padding:4px 12px;border-radius:99px;
+  border:1px solid var(--tg-border2);color:var(--tg-muted);
+  background:var(--tg-surface);
+  font-family:'Space Grotesk',sans-serif;
+}
+
+.scan-line{
+  height:1px;width:100%;
+  background:linear-gradient(90deg,transparent,var(--tg-red),transparent);
+  animation:scan 3s ease-in-out infinite;
+  margin:8px 0;
+}
+@keyframes scan{0%,100%{opacity:0;transform:scaleX(.2)}50%{opacity:.6;transform:scaleX(1)}}
+
+.pulse-ring{
+  width:32px;height:32px;border-radius:50%;
+  border:1px solid var(--tg-red);
+  animation:ring 2s ease-out infinite;
+  display:flex;align-items:center;justify-content:center;
+}
+@keyframes ring{0%{transform:scale(.8);opacity:.8}100%{transform:scale(1.4);opacity:0}}
+
+.blink-dot{
+  width:8px;height:8px;border-radius:50%;background:var(--tg-red);
+  animation:blink 1.4s ease-in-out infinite;
+}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}
+
+.mono{font-family:'JetBrains Mono',monospace}
+.sg{font-family:'Space Grotesk',sans-serif}
+</style>
+
+<div class="wrap" style="background:var(--tg-bg);padding:2rem;border-radius:16px">
+
+  <div class="brand-hero">
+    <div class="hero-logo">
+      <div class="hero-mark">
+        <svg class="hero-mark-inner" viewBox="0 0 20 20" fill="none">
+          <path d="M10 2L12.5 7.5H18L13.5 11L15.5 17L10 13.5L4.5 17L6.5 11L2 7.5H7.5L10 2Z" fill="#F25757" opacity=".9"/>
+          <circle cx="10" cy="10" r="3" fill="#09090E"/>
+        </svg>
+      </div>
+      <div>
+        <div class="hero-wordmark">Token<span>Guard</span></div>
+        <div class="hero-tagline mono">stop the spiral · guard your budget</div>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="hero-version mono">v0.1 — concept</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label sg">Primary palette — the signal spectrum</div>
+    <div class="palette-grid">
+      <div>
+        <div class="swatch" style="background:#F25757"></div>
+        <div class="swatch-label mono">Signal<br>#F25757</div>
+      </div>
+      <div>
+        <div class="swatch" style="background:#F27C35"></div>
+        <div class="swatch-label mono">Warn<br>#F27C35</div>
+      </div>
+      <div>
+        <div class="swatch" style="background:#F2C94C"></div>
+        <div class="swatch-label mono">Caution<br>#F2C94C</div>
+      </div>
+      <div>
+        <div class="swatch" style="background:#3DDB8A"></div>
+        <div class="swatch-label mono">Safe<br>#3DDB8A</div>
+      </div>
+      <div>
+        <div class="swatch" style="background:#4D9FFF"></div>
+        <div class="swatch-label mono">Info<br>#4D9FFF</div>
+      </div>
+      <div>
+        <div class="swatch" style="background:#9B8FFF"></div>
+        <div class="swatch-label mono">Accent<br>#9B8FFF</div>
+      </div>
+      <div>
+        <div class="swatch" style="background:#1C1C2E;border:1px solid #ffffff1a"></div>
+        <div class="swatch-label mono">Surface<br>#1C1C2E</div>
+      </div>
+    </div>
+    <div class="role-grid">
+      <div class="role-card">
+        <div class="role-swatch" style="background:linear-gradient(135deg,#F25757,#F27C35)"></div>
+        <div class="role-name sg">Danger gradient</div>
+        <div class="role-hex mono">#F25757 → #F27C35</div>
+        <div class="role-use mono">spiral alerts, budget overrun, active loop badges</div>
+      </div>
+      <div class="role-card">
+        <div class="role-swatch" style="background:linear-gradient(135deg,#3DDB8A,#2DD4BF)"></div>
+        <div class="role-name sg">Safe gradient</div>
+        <div class="role-hex mono">#3DDB8A → #2DD4BF</div>
+        <div class="role-use mono">resolved spirals, budget ok, guardrails active</div>
+      </div>
+      <div class="role-card">
+        <div class="role-swatch" style="background:linear-gradient(135deg,#4D9FFF,#9B8FFF)"></div>
+        <div class="role-name sg">Brand gradient</div>
+        <div class="role-hex mono">#4D9FFF → #9B8FFF</div>
+        <div class="role-use mono">logo accent, CTAs, onboarding, marketing hero</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label sg">Texture system — how surfaces feel</div>
+    <div class="texture-grid">
+      <div class="texture-card" style="background:var(--tg-surface)">
+        <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 19px,#ffffff08 19px,#ffffff08 20px),repeating-linear-gradient(90deg,transparent,transparent 19px,#ffffff08 19px,#ffffff08 20px)"></div>
+        <div class="texture-label mono">grid / 20px</div>
+      </div>
+      <div class="texture-card" style="background:var(--tg-surface)">
+        <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 3px,#ffffff05 3px,#ffffff05 4px)"></div>
+        <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 30%,rgba(242,87,87,.08),transparent 70%)"></div>
+        <div class="scan-line" style="position:absolute;top:50%;transform:translateY(-50%);left:0;right:0;margin:0"></div>
+        <div class="texture-label mono">scan lines + radial</div>
+      </div>
+      <div class="texture-card" style="background:var(--tg-surface)">
+        <div style="position:absolute;inset:0">
+          <div style="position:absolute;top:16px;left:16px;width:60px;height:60px;border-radius:50%;border:1px solid rgba(242,87,87,.15)"></div>
+          <div style="position:absolute;top:8px;left:8px;width:76px;height:76px;border-radius:50%;border:1px solid rgba(242,87,87,.08)"></div>
+          <div style="position:absolute;top:0px;left:0px;width:92px;height:92px;border-radius:50%;border:1px solid rgba(242,87,87,.04)"></div>
+          <div style="position:absolute;top:30px;left:30px;width:16px;height:16px;border-radius:50%;background:rgba(242,87,87,.3)"></div>
+        </div>
+        <div class="texture-label mono">radar / pulse rings</div>
+      </div>
+      <div class="texture-card" style="background:var(--tg-bg)">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:12px 16px;gap:6px">
+          <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(77,159,255,.3),transparent)"></div>
+          <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(242,87,87,.2),transparent)"></div>
+          <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(61,219,138,.2),transparent)"></div>
+          <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(77,159,255,.15),transparent)"></div>
+        </div>
+        <div class="texture-label mono">hairline traces</div>
+      </div>
+      <div class="texture-card" style="background:var(--tg-surface)">
+        <div style="position:absolute;inset:0;padding:16px;display:grid;grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(3,1fr);gap:6px">
+          <div style="background:rgba(242,87,87,.25);border-radius:2px"></div>
+          <div style="background:rgba(242,87,87,.18);border-radius:2px"></div>
+          <div style="background:rgba(242,124,53,.12);border-radius:2px"></div>
+          <div style="background:rgba(61,219,138,.15);border-radius:2px"></div>
+          <div style="background:rgba(61,219,138,.2);border-radius:2px"></div>
+          <div style="background:rgba(61,219,138,.1);border-radius:2px"></div>
+          <div style="background:rgba(255,255,255,.04);border-radius:2px"></div>
+          <div style="background:rgba(242,87,87,.1);border-radius:2px"></div>
+          <div style="background:rgba(242,87,87,.06);border-radius:2px"></div>
+          <div style="background:rgba(255,255,255,.04);border-radius:2px"></div>
+          <div style="background:rgba(77,159,255,.1);border-radius:2px"></div>
+          <div style="background:rgba(77,159,255,.15);border-radius:2px"></div>
+          <div style="background:rgba(255,255,255,.03);border-radius:2px"></div>
+          <div style="background:rgba(255,255,255,.03);border-radius:2px"></div>
+          <div style="background:rgba(61,219,138,.08);border-radius:2px"></div>
+          <div style="background:rgba(61,219,138,.12);border-radius:2px"></div>
+          <div style="background:rgba(255,255,255,.03);border-radius:2px"></div>
+          <div style="background:rgba(255,255,255,.02);border-radius:2px"></div>
+        </div>
+        <div class="texture-label mono">heatmap cells</div>
+      </div>
+      <div class="texture-card" style="background:var(--tg-bg)">
+        <div style="position:absolute;inset:0;padding:14px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;line-height:1.7;color:rgba(255,255,255,.12)">
+            <span style="color:rgba(242,87,87,.5)">!</span> auth.service.ts ×6<br>
+            <span style="color:rgba(77,159,255,.4)">→</span> token_count 284192<br>
+            <span style="color:rgba(61,219,138,.4)">✓</span> spiral blocked ×3<br>
+            <span style="color:rgba(255,255,255,.2)">·</span> session_cost 2.41<br>
+            <span style="color:rgba(242,124,53,.4)">⚠</span> budget 80% used
+          </div>
+        </div>
+        <div class="texture-label mono">terminal log bg</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label sg">Typography</div>
+    <div class="type-rows">
+      <div class="type-item">
+        <div class="type-meta">
+          <div class="type-meta-name">Display</div>
+          <div class="type-meta-spec mono">Space Grotesk 700 · 32px</div>
+        </div>
+        <div class="type-sample sg" style="font-size:28px;font-weight:700;color:var(--tg-text);letter-spacing:-.5px">TokenGuard</div>
+      </div>
+      <div class="type-item">
+        <div class="type-meta">
+          <div class="type-meta-name">Heading</div>
+          <div class="type-meta-spec mono">Space Grotesk 600 · 16px</div>
+        </div>
+        <div class="type-sample sg" style="font-size:16px;font-weight:600;color:var(--tg-text)">Spiral detected — auth.service.ts</div>
+      </div>
+      <div class="type-item">
+        <div class="type-meta">
+          <div class="type-meta-name">Body</div>
+          <div class="type-meta-spec mono">Space Grotesk 400 · 13px</div>
+        </div>
+        <div class="type-sample sg" style="font-size:13px;color:var(--tg-muted)">Burn rate 4,200 tok/min · no user input · est. $1.80 to budget cap</div>
+      </div>
+      <div class="type-item">
+        <div class="type-meta">
+          <div class="type-meta-name">Mono data</div>
+          <div class="type-meta-spec mono">JetBrains Mono 400 · 12px</div>
+        </div>
+        <div class="type-sample mono" style="font-size:12px;color:var(--tg-teal)">284,192 tok · $2.41 · 4,200/min · cursor@claude-sonnet-4</div>
+      </div>
+      <div class="type-item">
+        <div class="type-meta">
+          <div class="type-meta-name">Metric</div>
+          <div class="type-meta-spec mono">JetBrains Mono 600 · 26px</div>
+        </div>
+        <div class="type-sample mono" style="font-size:26px;font-weight:600;color:var(--tg-red)">284k</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label sg">Components in theme</div>
+    <div class="comp-grid">
+
+      <div class="comp-preview">
+        <div class="comp-name">Badges</div>
+        <div class="badge-row">
+          <div class="badge sg" style="background:rgba(242,87,87,.12);color:#F25757;border:1px solid rgba(242,87,87,.25)">spiral</div>
+          <div class="badge sg" style="background:rgba(61,219,138,.1);color:#3DDB8A;border:1px solid rgba(61,219,138,.25)">safe</div>
+          <div class="badge sg" style="background:rgba(242,196,76,.1);color:#F2C94C;border:1px solid rgba(242,196,76,.25)">warn</div>
+          <div class="badge sg" style="background:rgba(77,159,255,.1);color:#4D9FFF;border:1px solid rgba(77,159,255,.2)">info</div>
+          <div class="badge sg" style="background:rgba(155,143,255,.1);color:#9B8FFF;border:1px solid rgba(155,143,255,.2)">live</div>
+        </div>
+      </div>
+
+      <div class="comp-preview">
+        <div class="comp-name">Mini chart</div>
+        <div class="mini-chart" style="display:flex;align-items:flex-end;gap:3px;padding:0 4px">
+          <div class="mini-bar ok" style="height:20%;left:0px"></div>
+          <div class="mini-bar ok" style="height:28%"></div>
+          <div class="mini-bar ok" style="height:24%"></div>
+          <div class="mini-bar ok" style="height:32%"></div>
+          <div class="mini-bar ok" style="height:30%"></div>
+          <div class="mini-bar warm" style="height:45%"></div>
+          <div class="mini-bar warm" style="height:60%"></div>
+          <div class="mini-bar hot" style="height:82%"></div>
+          <div class="mini-bar hot" style="height:100%"></div>
+        </div>
+      </div>
+
+      <div class="comp-preview">
+        <div class="comp-name">Alert</div>
+        <div class="alert-mini">Spiral — auth.service.ts ×6</div>
+      </div>
+
+      <div class="comp-preview">
+        <div class="comp-name">Motion</div>
+        <div style="display:flex;align-items:center;gap:14px;padding:4px 0">
+          <div style="position:relative;width:32px;height:32px;display:flex;align-items:center;justify-content:center">
+            <div class="pulse-ring" style="position:absolute"></div>
+            <div class="blink-dot" style="position:relative;z-index:1"></div>
+          </div>
+          <div style="flex:1">
+            <div class="scan-line"></div>
+            <div class="scan-line" style="animation-delay:.8s"></div>
+          </div>
+          <div class="toggle-mini"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="section" style="margin-bottom:0">
+    <div class="section-label sg">Design language — keywords</div>
+    <div class="motion-row">
+      <div class="motion-chip">dark-first</div>
+      <div class="motion-chip">terminal-native</div>
+      <div class="motion-chip">signal-coded color</div>
+      <div class="motion-chip">monospace data</div>
+      <div class="motion-chip">scan-line texture</div>
+      <div class="motion-chip">pulse / radar motion</div>
+      <div class="motion-chip">hairline borders</div>
+      <div class="motion-chip">grid overlay</div>
+      <div class="motion-chip">no gradients on text</div>
+      <div class="motion-chip">space grotesk headers</div>
+      <div class="motion-chip">danger → orange → amber → green ramp</div>
+      <div class="motion-chip">radar rings for active spirals</div>
+    </div>
+  </div>
+
+</div>

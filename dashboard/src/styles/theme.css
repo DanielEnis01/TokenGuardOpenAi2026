@@ -1,0 +1,198 @@
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-size: 16px;
+  --font-family-sans: 'Inter', sans-serif;
+  --font-family-display: 'Cormorant Garamond', serif;
+  --font-family-mono: 'JetBrains Mono', monospace;
+  --font-family-accent: 'Space Grotesk', sans-serif;
+
+  --bg-page: #080808;
+  --bg-panel: rgba(12, 12, 14, 0.72);
+  --bg-rail: rgba(12, 12, 14, 0.72);
+  --bg-card: rgba(18, 18, 20, 0.65);
+  --bg-elevated: rgba(28, 28, 32, 0.70);
+  --bg-overlay: rgba(10, 10, 12, 0.85);
+
+  --blur-panel: blur(20px);
+  --blur-card: blur(16px);
+  --blur-elevated: blur(12px);
+  --blur-overlay: blur(24px);
+
+  --border-subtle: rgba(255, 255, 255, 0.07);
+  --border-default: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.20);
+
+  --text-primary: #e8e8f0;
+  --text-secondary: #8e8ea8;
+  --text-muted: #52526a;
+  --text-disabled: #33334a;
+
+  --status-danger: #e05555;
+  --status-warn: #d4874a;
+  --status-ok: #3dad78;
+  --status-info: #4a8fd4;
+
+  --accent: #727781;
+
+  --font-display: 600 42px/1 var(--font-family-display);
+  --font-heading: 500 15px/1.4 var(--font-family-sans);
+  --font-label: 500 12px/1.4 var(--font-family-sans);
+  --font-body: 400 13px/1.5 var(--font-family-sans);
+  --font-caption: 400 11px/1.4 var(--font-family-sans);
+  --font-data: 400 12px/1.4 var(--font-family-mono);
+  --font-data-lg: 500 22px/1.2 var(--font-family-mono);
+
+  --background: var(--bg-page);
+  --foreground: var(--text-primary);
+  --card: var(--bg-card);
+  --card-foreground: var(--text-primary);
+  --primary: var(--accent);
+  --primary-foreground: #ffffff;
+  --secondary: var(--bg-panel);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--bg-elevated);
+  --muted-foreground: var(--text-secondary);
+  --border: var(--border-subtle);
+  --radius: 0.75rem;
+}
+
+.dark {
+  --background: var(--bg-page);
+  --foreground: var(--text-primary);
+  --card: var(--bg-card);
+  --card-foreground: var(--text-primary);
+  --primary: var(--accent);
+  --primary-foreground: #ffffff;
+  --secondary: var(--bg-panel);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--bg-elevated);
+  --muted-foreground: var(--text-secondary);
+  --border: var(--border-subtle);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-none;
+    box-sizing: border-box;
+  }
+
+  html {
+    font-size: var(--font-size);
+    min-height: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    position: relative;
+    min-height: 100vh;
+    overflow-x: hidden;
+    font-family: var(--font-family-sans);
+    font-size: 13px;
+    line-height: 1.5;
+    font-weight: 400;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 80% 70% at 18% 50%, rgba(210, 210, 210, 0.16) 0%, transparent 58%),
+      radial-gradient(ellipse 55% 75% at 72% 28%, rgba(255, 255, 255, 0.07) 0%, transparent 52%),
+      radial-gradient(ellipse 45% 55% at 48% 82%, rgba(170, 170, 170, 0.05) 0%, transparent 48%);
+  }
+
+  #root,
+  main,
+  .app-root {
+    position: relative;
+    z-index: 1;
+  }
+
+  h1 {
+    font: var(--font-display);
+    color: var(--text-primary);
+    letter-spacing: -0.5px;
+  }
+
+  h2 {
+    font: var(--font-heading);
+    color: var(--text-primary);
+    letter-spacing: -0.1px;
+  }
+
+  h3 {
+    font: var(--font-label);
+    color: var(--text-primary);
+  }
+
+  p {
+    font: var(--font-body);
+    color: var(--text-secondary);
+  }
+
+  label {
+    font: var(--font-label);
+    color: var(--text-primary);
+  }
+
+  button {
+    font: var(--font-label);
+    color: var(--text-primary);
+  }
+
+  input {
+    font: var(--font-body);
+    color: var(--text-primary);
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    background: var(--bg-panel);
+    backdrop-filter: var(--blur-panel);
+    -webkit-backdrop-filter: var(--blur-panel);
+  }
+
+  .glass-card {
+    background: var(--bg-card);
+    backdrop-filter: var(--blur-card);
+    -webkit-backdrop-filter: var(--blur-card);
+  }
+
+  .glass-elevated {
+    background: var(--bg-elevated);
+    backdrop-filter: var(--blur-elevated);
+    -webkit-backdrop-filter: var(--blur-elevated);
+  }
+
+  .font-display {
+    font-family: var(--font-family-display);
+  }
+
+  .font-mono {
+    font-family: var(--font-family-mono);
+  }
+}
+

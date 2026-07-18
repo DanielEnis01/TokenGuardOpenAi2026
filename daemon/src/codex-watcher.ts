@@ -1,0 +1,503 @@
+import { access, readFile, readdir } from 'node:fs/promises';
+import { constants } from 'node:fs';
+import { join, normalize } from 'node:path';
+import { homedir } from 'node:os';
+
+import type { SessionEvent } from '../../shared/types.ts';
+
+const DEFAULT_CODEX_HOME = join(homedir(), '.codex');
+const DEFAULT_POLL_INTERVAL_MS = 2_000;
+const EXISTING_SESSION_GRACE_MS = 60_000;
+const STALE_SESSION_MS = 15 * 60_000;
+
+interface CodexWatcherOptions {
+  onEvents: (events: SessionEvent[]) => void;
+  isEnabled: () => boolean;
+  log: (scope: string, message: string, meta?: Record<string, unknown>) => void;
+  codexHome?: string;
+  pollIntervalMs?: number;
+}
+
+interface SessionIndexEntry {
+  id: string;
+  updatedAt: number | null;
+}
+
+interface TrackedCodexSession {
+  sessionId: string;
+  filePath: string;
+  cwd: string | null;
+  model: string | null;
+  source: string | null;
+  originator: string | null;
+  processedLineCount: number;
+  startedEmitted: boolean;
+  endedEmitted: boolean;
+  lastObservedAt: number;
+}
+
+interface TranscriptRecord {
+  timestamp?: string;
+  type?: string;
+  payload?: Record<string, unknown>;
+}
+
+export function createCodexWatcher({
+  onEvents,
+  isEnabled,
+  log,
+  codexHome = process.env.TG_CODEX_HOME ?? DEFAULT_CODEX_HOME,
+  pollIntervalMs = DEFAULT_POLL_INTERVAL_MS,
+}: CodexWatcherOptions) {
+  const sessionIndexPath = join(codexHome, 'session_index.jsonl');
+  const sessionsRoot = join(codexHome, 'sessions');
+
+  let pollTimer: ReturnType<typeof setInterval> | null = null;
+  let pollInFlight = false;
+  let initialized = false;
+  const trackedSessions = new Map<string, TrackedCodexSession>();
+  const sessionFileCache = new Map<string, string>();
+  const activeSessionByCwd = new Map<string, string>();
+
+  return {
+    async start(): Promise<void> {
+      if (pollTimer) {
+        return;
+      }
+
+      if (!(await fileExists(sessionIndexPath)) || !(await fileExists(sessionsRoot))) {
+        log('codex', 'codex session files not found', {
+          codexHome,
+        });
+        return;
+      }
+
+      log('codex', 'starting codex session watcher', {
+        codexHome,
+        pollIntervalMs,
+      });
+
+      await poll();
+      pollTimer = setInterval(() => {
+        void poll();
+      }, pollIntervalMs);
+    },
+
+    stop(): void {
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+
+      trackedSessions.clear();
+      activeSessionByCwd.clear();
+      initialized = false;
+    },
+  };
+
+  async function poll(): Promise<void> {
+    if (pollInFlight || !isEnabled()) {
+      return;
+    }
+
+    pollInFlight = true;
+
+    try {
+      const recentSessions = await readSessionIndex(sessionIndexPath);
+
+      if (recentSessions.length === 0) {
+        return;
+      }
+
+      if (!initialized) {
+        initialized = true;
+        await initializeTrackedSessions(recentSessions);
+        return;
+      }
+
+      await hydrateRecentSessions(recentSessions, false);
+      await processTrackedSessions();
+      emitStaleSessionEnds();
+    } catch (error) {
+      log('codex', 'watcher poll failed', {
+        error: error instanceof Error ? error.message : 'Unknown codex watcher error.',
+      });
+    } finally {
+      pollInFlight = false;
+    }
+  }
+
+  async function initializeTrackedSessions(recentSessions: SessionIndexEntry[]): Promise<void> {
+    await hydrateRecentSessions(recentSessions, true);
+
+    const cutoff = Date.now() - EXISTING_SESSION_GRACE_MS;
+
+    for (const trackedSession of trackedSessions.values()) {
+      if (!trackedSession.startedEmitted && trackedSession.lastObservedAt >= cutoff) {
+        emitSessionStart(trackedSession);
+      }
+    }
+  }
+
+  async function hydrateRecentSessions(
+    recentSessions: SessionIndexEntry[],
+    asBaseline: boolean,
+  ): Promise<void> {
+    for (const sessionEntry of recentSessions.slice(-15)) {
+      const existingSession = trackedSessions.get(sessionEntry.id);
+
+      if (existingSession) {
+        existingSession.lastObservedAt = sessionEntry.updatedAt ?? Date.now();
+        continue;
+      }
+
+      const trackedSession = await createTrackedSession(sessionEntry);
+
+      if (!trackedSession) {
+        continue;
+      }
+
+      trackedSessions.set(sessionEntry.id, trackedSession);
+
+      if (!asBaseline) {
+        emitSessionStart(trackedSession);
+      }
+    }
+  }
+
+  async function createTrackedSession(
+    sessionEntry: SessionIndexEntry,
+  ): Promise<TrackedCodexSession | null> {
+    const filePath = await findSessionFileById(sessionEntry.id);
+
+    if (!filePath) {
+      log('codex', 'session file not found for codex session', {
+        sessionId: sessionEntry.id,
+      });
+      return null;
+    }
+
+    const fileContents = await readFile(filePath, 'utf8');
+    const lines = splitJsonLines(fileContents);
+
+    if (lines.length === 0) {
+      return null;
+    }
+
+    const metadata = readSessionMetadata(lines);
+
+    return {
+      sessionId: sessionEntry.id,
+      filePath,
+      cwd: metadata.cwd,
+      model: metadata.model,
+      source: metadata.source,
+      originator: metadata.originator,
+      processedLineCount: lines.length,
+      startedEmitted: false,
+      endedEmitted: false,
+      lastObservedAt: sessionEntry.updatedAt ?? Date.now(),
+    };
+  }
+
+  async function processTrackedSessions(): Promise<void> {
+    for (const trackedSession of trackedSessions.values()) {
+      const fileContents = await readFile(trackedSession.filePath, 'utf8');
+      const lines = splitJsonLines(fileContents);
+
+      if (lines.length <= trackedSession.processedLineCount) {
+        continue;
+      }
+
+      const nextLines = lines.slice(trackedSession.processedLineCount);
+      trackedSession.processedLineCount = lines.length;
+
+      if (!trackedSession.startedEmitted) {
+        emitSessionStart(trackedSession);
+      }
+
+      const fileWriteEvents = nextLines.flatMap((line) =>
+        parseFileWriteEvents(line, trackedSession),
+      );
+
+      if (fileWriteEvents.length > 0) {
+        trackedSession.lastObservedAt = fileWriteEvents[fileWriteEvents.length - 1].timestamp;
+        onEvents(fileWriteEvents);
+        log('codex', 'emitted codex file activity', {
+          sessionId: trackedSession.sessionId,
+          fileWrites: fileWriteEvents.map((event) => event.filePath),
+        });
+      }
+    }
+  }
+
+  function emitStaleSessionEnds(): void {
+    const staleCutoff = Date.now() - STALE_SESSION_MS;
+
+    for (const trackedSession of trackedSessions.values()) {
+      if (
+        !trackedSession.startedEmitted ||
+        trackedSession.endedEmitted ||
+        trackedSession.lastObservedAt > staleCutoff
+      ) {
+        continue;
+      }
+
+      trackedSession.endedEmitted = true;
+
+      if (trackedSession.cwd) {
+        const cwdKey = normalize(trackedSession.cwd);
+        if (activeSessionByCwd.get(cwdKey) === trackedSession.sessionId) {
+          activeSessionByCwd.delete(cwdKey);
+        }
+      }
+
+      onEvents([
+        {
+          type: 'session_end',
+          sessionId: trackedSession.sessionId,
+          tool: 'codex',
+          timestamp: trackedSession.lastObservedAt,
+        },
+      ]);
+
+      log('codex', 'closed stale codex session', {
+        sessionId: trackedSession.sessionId,
+        cwd: trackedSession.cwd,
+      });
+    }
+  }
+
+  function emitSessionStart(trackedSession: TrackedCodexSession): void {
+    trackedSession.startedEmitted = true;
+    trackedSession.endedEmitted = false;
+
+    if (trackedSession.cwd) {
+      const cwdKey = normalize(trackedSession.cwd);
+      const priorSessionId = activeSessionByCwd.get(cwdKey);
+
+      if (priorSessionId && priorSessionId !== trackedSession.sessionId) {
+        const priorTrackedSession = trackedSessions.get(priorSessionId);
+
+        if (priorTrackedSession) {
+          priorTrackedSession.endedEmitted = true;
+        }
+
+        onEvents([
+          {
+            type: 'session_end',
+            sessionId: priorSessionId,
+            tool: 'codex',
+            timestamp: trackedSession.lastObservedAt,
+          },
+        ]);
+      }
+
+      activeSessionByCwd.set(cwdKey, trackedSession.sessionId);
+    }
+
+    onEvents([
+      {
+        type: 'session_start',
+        sessionId: trackedSession.sessionId,
+        tool: 'codex',
+        timestamp: trackedSession.lastObservedAt,
+        model: trackedSession.model,
+      },
+    ]);
+
+    log('codex', 'detected codex session', {
+      sessionId: trackedSession.sessionId,
+      cwd: trackedSession.cwd,
+      model: trackedSession.model,
+      source: trackedSession.source,
+      originator: trackedSession.originator,
+    });
+  }
+
+  async function findSessionFileById(sessionId: string): Promise<string | null> {
+    const cachedPath = sessionFileCache.get(sessionId);
+
+    if (cachedPath && (await fileExists(cachedPath))) {
+      return cachedPath;
+    }
+
+    const filePath = await findSessionFileRecursive(sessionsRoot, sessionId);
+
+    if (filePath) {
+      sessionFileCache.set(sessionId, filePath);
+    }
+
+    return filePath;
+  }
+}
+
+async function readSessionIndex(path: string): Promise<SessionIndexEntry[]> {
+  const contents = await readFile(path, 'utf8');
+
+  return splitJsonLines(contents)
+    .map((line) => safeParseJson(line))
+    .filter(isRecord)
+    .map((record) => ({
+      id: pickString(record.id),
+      updatedAt: parseTimestamp(record.updated_at),
+    }))
+    .filter((entry): entry is SessionIndexEntry => Boolean(entry.id));
+}
+
+async function findSessionFileRecursive(
+  rootPath: string,
+  sessionId: string,
+): Promise<string | null> {
+  const entries = await readdir(rootPath, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const nextPath = join(rootPath, entry.name);
+
+    if (entry.isDirectory()) {
+      const foundPath = await findSessionFileRecursive(nextPath, sessionId);
+
+      if (foundPath) {
+        return foundPath;
+      }
+
+      continue;
+    }
+
+    if (entry.isFile() && entry.name.endsWith(`${sessionId}.jsonl`)) {
+      return nextPath;
+    }
+  }
+
+  return null;
+}
+
+function readSessionMetadata(lines: string[]): {
+  cwd: string | null;
+  model: string | null;
+  source: string | null;
+  originator: string | null;
+} {
+  let cwd: string | null = null;
+  let model: string | null = null;
+  let source: string | null = null;
+  let originator: string | null = null;
+
+  for (const line of lines.slice(0, 25)) {
+    const record = safeParseJson(line);
+
+    if (!isTranscriptRecord(record)) {
+      continue;
+    }
+
+    if (record.type === 'session_meta' && isRecord(record.payload)) {
+      cwd = pickString(record.payload.cwd) ?? cwd;
+      source = pickString(record.payload.source) ?? source;
+      originator = pickString(record.payload.originator) ?? originator;
+    }
+
+    if (record.type === 'turn_context' && isRecord(record.payload)) {
+      model = pickString(record.payload.model) ?? model;
+    }
+
+    if (cwd && model) {
+      break;
+    }
+  }
+
+  return { cwd, model, source, originator };
+}
+
+function parseFileWriteEvents(
+  line: string,
+  trackedSession: TrackedCodexSession,
+): Extract<SessionEvent, { type: 'file_write' }>[] {
+  const record = safeParseJson(line);
+
+  if (!isTranscriptRecord(record) || !isRecord(record.payload)) {
+    return [];
+  }
+
+  if (
+    record.type !== 'response_item' ||
+    record.payload.type !== 'custom_tool_call' ||
+    record.payload.name !== 'apply_patch' ||
+    record.payload.status !== 'completed'
+  ) {
+    return [];
+  }
+
+  const patchInput = pickString(record.payload.input);
+
+  if (!patchInput) {
+    return [];
+  }
+
+  const timestamp = parseTimestamp(record.timestamp) ?? Date.now();
+  const filePaths = extractPatchFilePaths(patchInput);
+
+  return filePaths.map((filePath) => ({
+    type: 'file_write' as const,
+    sessionId: trackedSession.sessionId,
+    tool: 'codex' as const,
+    timestamp,
+    filePath,
+  }));
+}
+
+function extractPatchFilePaths(patchInput: string): string[] {
+  const pattern = /^\*\*\* (?:Add|Update|Delete) File: (.+)$/gm;
+  const filePaths = new Set<string>();
+  let match: RegExpExecArray | null = null;
+
+  while ((match = pattern.exec(patchInput)) !== null) {
+    filePaths.add(match[1].trim().replaceAll('\\', '/'));
+  }
+
+  return [...filePaths];
+}
+
+function splitJsonLines(contents: string): string[] {
+  return contents
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+}
+
+function safeParseJson(value: string): unknown {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
+
+function parseTimestamp(value: unknown): number | null {
+  if (typeof value !== 'string' || value.length === 0) {
+    return null;
+  }
+
+  const parsedValue = Date.parse(value);
+  return Number.isFinite(parsedValue) ? parsedValue : null;
+}
+
+function pickString(value: unknown): string | null {
+  return typeof value === 'string' && value.trim().length > 0 ? value : null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isTranscriptRecord(value: unknown): value is TranscriptRecord {
+  return isRecord(value);
+}
+
+async function fileExists(path: string): Promise<boolean> {
+  try {
+    await access(path, constants.F_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}

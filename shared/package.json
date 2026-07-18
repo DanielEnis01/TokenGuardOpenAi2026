@@ -1,0 +1,5 @@
+{
+  "name": "tokenguard-shared",
+  "private": true,
+  "type": "module"
+}

@@ -1,0 +1,17 @@
+{
+  "name": "tokenguard-cli",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "start": "node --experimental-strip-types src/index.ts",
+    "check": "tsc --noEmit -p tsconfig.json"
+  },
+  "engines": {
+    "node": ">=22.14.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.6.1",
+    "typescript": "5.9.3"
+  }
+}
