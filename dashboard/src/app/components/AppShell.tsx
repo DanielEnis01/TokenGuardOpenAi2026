@@ -1,8 +1,13 @@
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { Activity, Shield, Clock, Settings as SettingsIcon, Wrench } from 'lucide-react';
 import { Logo, LogoIcon } from './Logo';
 import { useDaemonState } from '../providers/DaemonProvider';
 import { getWebsitePricingUrl } from '../lib/externalLinks';
+
+// Each route renders its own AppShell. Keep the pointer state at module scope so
+// a sidebar remains open when a navigation click swaps one page for another.
+let sidebarPointerIsInside = false;
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const location = useLocation();
@@ -10,6 +15,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const hasActiveSession = Boolean(session.sessionId);
   const activeSpiralCount = session.activeSpirals.length;
   const pricingUrl = getWebsitePricingUrl();
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(() => sidebarPointerIsInside);
+
+  const expandSidebar = () => {
+    sidebarPointerIsInside = true;
+    setIsSidebarExpanded(true);
+  };
+
+  const collapseSidebar = () => {
+    sidebarPointerIsInside = false;
+    setIsSidebarExpanded(false);
+  };
 
   const navItems = [
     { path: '/monitor', icon: Activity, label: 'Monitor' },
@@ -21,8 +37,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="app-root dashboard-glass flex h-screen overflow-hidden" style={{ background: 'var(--bg-page)' }}>
-      <div
-        className="flex w-12 shrink-0 flex-col items-center py-4"
+      <aside
+        className={`dashboard-sidebar relative z-10 flex shrink-0 flex-col overflow-hidden transition-[width] duration-300 ease-out ${
+          isSidebarExpanded ? 'is-expanded w-[220px]' : 'w-14'
+        }`}
+        onMouseEnter={expandSidebar}
+        onMouseLeave={collapseSidebar}
+        onFocusCapture={expandSidebar}
         style={{
           background: 'var(--bg-rail)',
           borderRight: '1px solid var(--border-subtle)',
@@ -30,82 +51,61 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           WebkitBackdropFilter: 'var(--blur-panel)',
         }}
       >
-        <Link to="/monitor" className="mb-6">
+        <Link to="/monitor" className="flex min-w-[220px] items-center gap-3 px-4 py-5" aria-label="TokenGuard home">
           <LogoIcon size={24} />
-        </Link>
-        <div className="flex flex-1 flex-col gap-2">
-          {navItems.slice(0, 4).map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className="flex h-8 w-8 items-center justify-center rounded-md transition-colors"
-              style={{
-                color: location.pathname === item.path ? 'var(--text-primary)' : 'var(--text-muted)',
-                background: 'transparent',
-              }}
-            >
-              <item.icon className="h-4 w-4" />
-            </Link>
-          ))}
-        </div>
-        <div className="mb-3 h-px w-6" style={{ background: 'var(--border-subtle)' }} />
-        <Link
-          to="/settings"
-          className="flex h-8 w-8 items-center justify-center rounded-md transition-colors"
-          style={{
-            color: location.pathname === '/settings' ? 'var(--text-primary)' : 'var(--text-muted)',
-            background: 'transparent',
-          }}
-        >
-          <SettingsIcon className="h-4 w-4" />
-        </Link>
-        <a
-          href={pricingUrl}
-          className="mt-3 rounded-lg px-2 py-1 text-center transition-opacity hover:opacity-85"
-          style={{
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--border-subtle)',
-            color: 'var(--text-primary)',
-            font: 'var(--font-caption)',
-            backdropFilter: 'var(--blur-elevated)',
-            WebkitBackdropFilter: 'var(--blur-elevated)',
-          }}
-        >
-          Free
-        </a>
-      </div>
-
-      <div
-        className="hidden w-[220px] shrink-0 lg:flex lg:flex-col"
-        style={{
-          background: 'var(--bg-panel)',
-          borderRight: '1px solid var(--border-subtle)',
-          backdropFilter: 'var(--blur-panel)',
-          WebkitBackdropFilter: 'var(--blur-panel)',
-        }}
-      >
-        <div className="px-6 py-7">
-          <p style={{ font: 'var(--font-caption)', color: 'var(--text-muted)' }}>Workspace</p>
-          <div className="mt-2">
-            <Logo size={18} />
+          <div className="sidebar-copy min-w-0">
+            <p style={{ font: 'var(--font-caption)', color: 'var(--text-muted)' }}>Workspace</p>
+            <div className="mt-1">
+              <Logo size={18} />
+            </div>
           </div>
-        </div>
-        <nav className="flex flex-1 flex-col gap-1 px-3">
-          {navItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className="rounded-xl px-4 py-3 transition-colors"
-              style={{
-                background: location.pathname === item.path ? 'var(--bg-card)' : 'transparent',
-                color: location.pathname === item.path ? 'var(--text-primary)' : 'var(--text-secondary)',
-              }}
-            >
-              <div style={{ font: 'var(--font-label)' }}>{item.label}</div>
-            </Link>
-          ))}
+        </Link>
+
+        <nav className="flex min-w-[220px] flex-1 flex-col gap-1 px-3 pb-4">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.path;
+
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                title={item.label}
+                className="sidebar-nav-item flex items-center gap-3 rounded-xl px-3 py-3"
+                style={{
+                  background: isActive ? 'var(--bg-card)' : 'transparent',
+                  border: `1px solid ${isActive ? 'var(--border-subtle)' : 'transparent'}`,
+                  color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+                }}
+              >
+                <item.icon className="h-4 w-4 shrink-0" />
+                <span className="sidebar-copy whitespace-nowrap" style={{ font: 'var(--font-label)' }}>
+                  {item.label}
+                </span>
+              </Link>
+            );
+          })}
         </nav>
-      </div>
+
+        <div className="min-w-[220px] px-3 pb-4">
+          <a
+            href={pricingUrl}
+            className="sidebar-plan flex items-center gap-3 rounded-xl px-3 py-2.5"
+            style={{
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border-subtle)',
+              color: 'var(--text-primary)',
+              font: 'var(--font-caption)',
+              backdropFilter: 'var(--blur-elevated)',
+              WebkitBackdropFilter: 'var(--blur-elevated)',
+            }}
+          >
+            <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full" style={{ background: 'var(--accent)', color: '#0b0b0d' }}>
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: 'currentColor' }} />
+            </span>
+            <span className="sidebar-copy whitespace-nowrap">Free plan</span>
+          </a>
+        </div>
+      </aside>
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <div className="flex-1 overflow-y-auto overflow-x-hidden">
