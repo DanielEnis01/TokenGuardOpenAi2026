@@ -83,7 +83,7 @@ export default function Onboarding() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center" style={{ background: 'transparent' }}>
+    <div className="onboarding-page flex min-h-screen items-center justify-center" style={{ background: 'transparent' }}>
       <ToolInstallDialog
         open={isInstallDialogOpen}
         tools={selectedTools}

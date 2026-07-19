@@ -14,7 +14,7 @@ export default function DashboardDemo() {
   }, []);
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--bg-page)' }}>
+    <div className="website-page min-h-screen" style={{ background: 'var(--bg-page)' }}>
       {/* Header/Nav */}
       <nav className="px-6 py-5 flex items-center justify-between" 
            style={{ 

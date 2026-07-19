@@ -16,15 +16,12 @@ export default function Guardrails() {
 
   return (
     <AppShell>
-      <div className="p-7" style={{ background: 'transparent' }}>
+      <div className="dashboard-page p-7" style={{ background: 'transparent' }}>
         <div className="mx-auto max-w-6xl">
-          <div className="mb-8">
-            <h2 className="mb-2" style={{ font: 'var(--font-heading)', fontSize: '24px', color: 'var(--text-primary)' }}>
-              Guardrails
-            </h2>
-            <p style={{ font: 'var(--font-body)', color: 'var(--text-secondary)' }}>
-              Real-time protection rules that automatically enforce your limits
-            </p>
+          <div className="dashboard-page-header">
+            <p className="dashboard-page-kicker">Protection rules</p>
+            <h2 className="dashboard-page-title">Guardrails</h2>
+            <p className="dashboard-page-description">Set the limits TokenGuard enforces during a coding session.</p>
             <p className="mt-2" style={{ font: 'var(--font-caption)', color: 'var(--text-muted)' }}>
               {isUsingMockData
                 ? 'daemon offline - editing mock fallback config'
@@ -478,18 +475,9 @@ function SimulationPreview({
   const Icon = config.icon;
 
   return (
-      <div className="mt-auto border-t pt-4" style={{ borderColor: 'var(--border-subtle)' }}>
-      <div
-        className="flex items-center gap-3 rounded-md p-3"
-        style={{
-          background: 'var(--bg-elevated)',
-          backdropFilter: 'var(--blur-elevated)',
-          WebkitBackdropFilter: 'var(--blur-elevated)',
-        }}
-      >
+    <div className="mt-auto flex items-center gap-2 pt-5">
         <Icon className="h-4 w-4 flex-shrink-0" style={{ color: config.color }} />
         <span style={{ font: 'var(--font-caption)', color: 'var(--text-secondary)' }}>{message}</span>
-      </div>
     </div>
   );
 }

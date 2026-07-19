@@ -69,14 +69,11 @@ export default function Tools() {
         description="TokenGuard will run the connector install command locally through the daemon. Codex is the primary live connector in this build."
       />
 
-      <div className="p-7" style={{ background: 'transparent' }}>
-        <div className="mb-8">
-          <h2 className="mb-2" style={{ font: 'var(--font-heading)', color: 'var(--text-primary)' }}>
-            Tools
-          </h2>
-          <p style={{ font: 'var(--font-body)', color: 'var(--text-secondary)' }}>
-            Connect your IDEs and API keys
-          </p>
+      <div className="dashboard-page p-7" style={{ background: 'transparent' }}>
+        <div className="dashboard-page-header">
+          <p className="dashboard-page-kicker">Connections</p>
+          <h2 className="dashboard-page-title">Tools</h2>
+          <p className="dashboard-page-description">Connect the coding environments TokenGuard should monitor.</p>
           <p className="mt-2" style={{ font: 'var(--font-caption)', color: 'var(--text-muted)' }}>
             Connecting a tool runs the local `tokenguard connect &lt;tool&gt;` CLI flow through the daemon after you confirm.
           </p>

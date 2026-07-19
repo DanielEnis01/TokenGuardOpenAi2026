@@ -7,21 +7,21 @@
   --font-family-mono: 'JetBrains Mono', monospace;
   --font-family-accent: 'Space Grotesk', sans-serif;
 
-  --bg-page: #080808;
-  --bg-panel: rgba(12, 12, 14, 0.72);
-  --bg-rail: rgba(12, 12, 14, 0.72);
-  --bg-card: rgba(18, 18, 20, 0.65);
-  --bg-elevated: rgba(28, 28, 32, 0.70);
-  --bg-overlay: rgba(10, 10, 12, 0.85);
+  --bg-page: #060607;
+  --bg-panel: linear-gradient(145deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.018) 42%, rgba(255, 255, 255, 0.008)), rgba(12, 12, 15, 0.62);
+  --bg-rail: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.012) 34%), rgba(10, 10, 13, 0.7);
+  --bg-card: linear-gradient(135deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.032) 38%, rgba(255, 255, 255, 0.012)), rgba(16, 16, 20, 0.56);
+  --bg-elevated: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.035) 48%, rgba(255, 255, 255, 0.018)), rgba(25, 25, 30, 0.58);
+  --bg-overlay: rgba(10, 10, 12, 0.82);
 
-  --blur-panel: blur(20px);
-  --blur-card: blur(16px);
-  --blur-elevated: blur(12px);
-  --blur-overlay: blur(24px);
+  --blur-panel: blur(28px) saturate(125%);
+  --blur-card: blur(22px) saturate(135%);
+  --blur-elevated: blur(16px) saturate(130%);
+  --blur-overlay: blur(28px) saturate(135%);
 
-  --border-subtle: rgba(255, 255, 255, 0.07);
-  --border-default: rgba(255, 255, 255, 0.12);
-  --border-strong: rgba(255, 255, 255, 0.20);
+  --border-subtle: rgba(255, 255, 255, 0.12);
+  --border-default: rgba(255, 255, 255, 0.18);
+  --border-strong: rgba(255, 255, 255, 0.28);
 
   --text-primary: #e8e8f0;
   --text-secondary: #8e8ea8;
@@ -33,7 +33,7 @@
   --status-ok: #3dad78;
   --status-info: #4a8fd4;
 
-  --accent: #727781;
+  --accent: #c6cad7;
 
   --font-display: 600 42px/1 var(--font-family-display);
   --font-heading: 500 15px/1.4 var(--font-family-sans);
@@ -193,6 +193,90 @@
 
   .font-mono {
     font-family: var(--font-family-mono);
+  }
+
+  .website-page {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    background:
+      radial-gradient(60rem 46rem at 12% 2%, rgba(223, 228, 255, 0.13), transparent 58%),
+      radial-gradient(46rem 38rem at 96% 28%, rgba(185, 199, 255, 0.1), transparent 55%),
+      radial-gradient(42rem 34rem at 48% 108%, rgba(228, 228, 238, 0.075), transparent 62%),
+      var(--bg-page) !important;
+  }
+
+  .website-page::before,
+  .website-page::after {
+    position: absolute;
+    z-index: -1;
+    border-radius: 999px;
+    content: '';
+    pointer-events: none;
+    filter: blur(24px);
+  }
+
+  .website-page::before {
+    top: 12%;
+    left: -14rem;
+    width: 34rem;
+    height: 34rem;
+    background: radial-gradient(circle, rgba(215, 222, 255, 0.12), transparent 68%);
+    animation: liquid-glass-drift 18s ease-in-out infinite alternate;
+  }
+
+  .website-page::after {
+    right: -12rem;
+    bottom: 2%;
+    width: 30rem;
+    height: 30rem;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.09), transparent 68%);
+    animation: liquid-glass-drift 22s ease-in-out -7s infinite alternate-reverse;
+  }
+
+  .website-page > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .website-page nav {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 28px rgba(0, 0, 0, 0.14);
+  }
+
+  .website-page [style*='var(--bg-card)'],
+  .website-page [style*='var(--bg-elevated)'] {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.075), 0 12px 32px rgba(0, 0, 0, 0.14);
+  }
+
+  .website-page a,
+  .website-page button {
+    transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+  }
+
+  .website-page a:hover,
+  .website-page button:hover {
+    border-color: var(--border-default) !important;
+  }
+
+  @keyframes liquid-glass-drift {
+    from {
+      transform: translate3d(-3%, -2%, 0) scale(0.96);
+    }
+    to {
+      transform: translate3d(12%, 8%, 0) scale(1.08);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .website-page::before,
+    .website-page::after {
+      animation: none;
+    }
+
+    .website-page a,
+    .website-page button {
+      transition: none;
+    }
   }
 }
 

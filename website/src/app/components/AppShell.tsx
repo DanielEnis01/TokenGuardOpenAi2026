@@ -14,7 +14,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <div className="flex h-screen" style={{ background: 'var(--bg-page)' }}>
+    <div className="website-page flex h-screen" style={{ background: 'var(--bg-page)' }}>
       {/* Left Rail */}
       <div className="w-12 flex flex-col items-center py-4" 
            style={{ background: 'var(--bg-rail)', borderRight: '1px solid var(--border-subtle)' }}>

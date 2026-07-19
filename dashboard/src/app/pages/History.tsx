@@ -9,13 +9,12 @@ export default function History() {
 
   return (
     <AppShell>
-      <div className="space-y-5">
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div className="dashboard-page space-y-5">
+        <header className="dashboard-page-header flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p style={{ font: 'var(--font-caption)', color: 'var(--text-muted)' }}>Session History</p>
-            <h1 className="mt-1" style={{ font: '600 28px/1.1 var(--font-family-sans)' }}>
-              Recorded sessions and spiral outcomes
-            </h1>
+            <p className="dashboard-page-kicker">Session history</p>
+            <h1 className="dashboard-page-title">Recorded sessions</h1>
+            <p className="dashboard-page-description">Review spend, duration, and intervention outcomes over time.</p>
           </div>
           <button
             type="button"

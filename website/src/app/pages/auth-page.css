@@ -1,0 +1,277 @@
+.auth-entry-page {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.auth-entry-page .title-text {
+  display: block;
+  width: 100%;
+  color: #ffffff;
+  text-align: center;
+  text-transform: none;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(2.75rem, 9vw, 5.5rem);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  background: linear-gradient(180deg, #ffffff 0%, #e0e0e0 50%, #b8b8b8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.1)) drop-shadow(0 4px 24px rgba(255, 255, 255, 0.1));
+  animation: auth-title-glow 3s ease-in-out infinite;
+}
+
+.auth-entry-page .auth-home-link {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  color: rgba(255, 255, 255, 0.5);
+  text-decoration: none;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  letter-spacing: 0.01em;
+  transition: color 180ms ease, transform 180ms ease;
+}
+
+.auth-entry-page .auth-home-link:hover {
+  color: rgba(255, 255, 255, 0.92);
+  transform: translateX(-2px);
+}
+
+@keyframes auth-title-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.1)) drop-shadow(0 4px 24px rgba(255, 255, 255, 0.1));
+  }
+  50% {
+    filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.1)) drop-shadow(0 4px 32px rgba(255, 255, 255, 0.2));
+  }
+}
+
+.auth-entry-page .subtitle-text {
+  color: #a0a0a0;
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-shadow: -1px -1px 0 rgba(0, 0, 0, 0.15), 1px -1px 0 rgba(0, 0, 0, 0.15), -1px 1px 0 rgba(0, 0, 0, 0.15), 1px 1px 0 rgba(0, 0, 0, 0.15);
+}
+
+.auth-entry-page .sign-in-form-container {
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.auth-entry-page .sign-in-form {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-entry-page .input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.auth-entry-page .input-icon {
+  position: absolute;
+  top: 50%;
+  left: 16px;
+  z-index: 1;
+  color: rgba(255, 255, 255, 0.4);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.auth-entry-page .form-input {
+  width: 100%;
+  padding: 14px 16px 14px 48px;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  outline: none;
+  background: rgba(255, 255, 255, 0.03);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(8px);
+}
+
+.auth-entry-page .form-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+  font-weight: 300;
+}
+
+.auth-entry-page .form-input:focus {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.05);
+}
+
+.auth-entry-page .sign-in-button,
+.auth-entry-page .google-button {
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(8px);
+}
+
+.auth-entry-page .sign-in-button {
+  position: relative;
+  width: 100%;
+  padding: 14px 48px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: transparent;
+  margin-top: 8px;
+}
+
+.auth-entry-page .sign-in-button::before {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  content: '';
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.auth-entry-page .sign-in-button:hover::before {
+  left: 100%;
+}
+
+.auth-entry-page .sign-in-button:hover,
+.auth-entry-page .google-button:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateY(-2px);
+}
+
+.auth-entry-page .sign-in-button:hover {
+  box-shadow: 0 8px 24px rgba(255, 255, 255, 0.1);
+}
+
+.auth-entry-page .button-text {
+  position: relative;
+  z-index: 1;
+  color: #ffffff;
+  background: linear-gradient(180deg, #ffffff 0%, #d0d0d0 100%);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.auth-entry-page .divider {
+  position: relative;
+  margin: 8px 0;
+  text-align: center;
+}
+
+.auth-entry-page .divider::before,
+.auth-entry-page .divider::after {
+  position: absolute;
+  top: 50%;
+  width: 45%;
+  height: 1px;
+  content: '';
+}
+
+.auth-entry-page .divider::before {
+  left: 0;
+  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.1));
+}
+
+.auth-entry-page .divider::after {
+  right: 0;
+  background: linear-gradient(to left, transparent, rgba(255, 255, 255, 0.1));
+}
+
+.auth-entry-page .divider-text {
+  padding: 0 16px;
+  color: rgba(255, 255, 255, 0.4);
+  background: transparent;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+}
+
+.auth-entry-page .google-button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 14px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.auth-entry-page .google-button:hover {
+  box-shadow: 0 4px 16px rgba(255, 255, 255, 0.05);
+}
+
+.auth-entry-page .google-icon {
+  flex-shrink: 0;
+}
+
+.auth-entry-page .google-text {
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.auth-entry-page .register-text {
+  margin-top: 8px;
+  color: rgba(255, 255, 255, 0.5);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  letter-spacing: 0.01em;
+}
+
+.auth-entry-page .register-link {
+  position: relative;
+  color: #ffffff;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.auth-entry-page .register-link::after {
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  content: '';
+  background: linear-gradient(to right, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.3));
+  transition: width 0.3s ease;
+}
+
+.auth-entry-page .register-link:hover::after {
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .auth-entry-page .subtitle-text {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-entry-page .title-text {
+    font-size: 2.6rem;
+  }
+
+  .auth-entry-page .subtitle-text,
+  .auth-entry-page .form-input,
+  .auth-entry-page .google-text {
+    font-size: 0.9rem;
+  }
+}

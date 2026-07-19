@@ -92,7 +92,7 @@ export default function Monitor() {
 
   return (
     <AppShell>
-      <div className="monitor-page space-y-5">
+      <div className="monitor-page dashboard-page space-y-5">
         {primaryActiveSpiral ? (
           <SpiralDecisionDialog
             open={isSpiralDialogOpen}
@@ -108,12 +108,11 @@ export default function Monitor() {
           />
         ) : null}
 
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <header className="dashboard-page-header flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="liquid-eyebrow" style={{ font: 'var(--font-caption)', color: 'var(--text-muted)' }}>Live Monitor</p>
-            <h1 className="liquid-heading mt-1">
-              Session telemetry and spiral intervention
-            </h1>
+            <p className="dashboard-page-kicker">Live monitor</p>
+            <h1 className="dashboard-page-title">Session telemetry</h1>
+            <p className="dashboard-page-description">Cost, context, and loop signals from the current coding session.</p>
           </div>
           <div
             className="liquid-status inline-flex w-fit items-center gap-2 rounded-full px-3 py-2"

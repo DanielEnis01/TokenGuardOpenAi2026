@@ -6,7 +6,7 @@ export default function ErrorPage() {
   const error = useRouteError() as { statusText?: string; message?: string };
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-page)' }}>
+    <div className="website-page min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-page)' }}>
       <div className="max-w-md w-full px-6 text-center">
         {/* Logo */}
         <Link to="/" className="mb-8 inline-flex items-center justify-center">

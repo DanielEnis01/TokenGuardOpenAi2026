@@ -13,15 +13,12 @@ export default function Settings() {
 
   return (
     <AppShell>
-      <div className="p-7" style={{ background: 'transparent' }}>
+      <div className="dashboard-page p-7" style={{ background: 'transparent' }}>
         <div className="max-w-3xl">
-          <div className="mb-8">
-            <h2 className="mb-2" style={{ font: 'var(--font-heading)', fontSize: '20px', color: 'var(--text-primary)' }}>
-              Settings
-            </h2>
-            <p style={{ font: 'var(--font-body)', color: 'var(--text-secondary)' }}>
-              Manage your account and preferences
-            </p>
+          <div className="dashboard-page-header">
+            <p className="dashboard-page-kicker">Workspace</p>
+            <h2 className="dashboard-page-title">Settings</h2>
+            <p className="dashboard-page-description">Account preferences and local data controls.</p>
           </div>
 
           <Section title="Account">

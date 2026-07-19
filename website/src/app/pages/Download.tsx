@@ -1,205 +1,115 @@
+import { ArrowRight, Apple, Check, Code2, Copy, Download, Github, Monitor, Terminal } from 'lucide-react';
 import { Link } from 'react-router';
-import { Logo } from '../components/Logo';
-import { Download, Monitor, Apple, Github, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
-import { DevToolsOverlay } from '../components/DevToolsOverlay';
+import { SiteNav } from './HowItWorks';
+import './product-pages.css';
+
+const releases = [
+  { platform: 'Windows', detail: 'Windows 10 or later · x64', size: '84.2 MB', icon: Monitor, status: 'Available now' },
+  { platform: 'macOS', detail: 'macOS 11 or later · Apple Silicon and Intel', size: '92.8 MB', icon: Apple, status: 'Coming soon' },
+  { platform: 'Linux', detail: 'Ubuntu, Debian, and Fedora packages', size: '88.1 MB', icon: Github, status: 'Coming soon' },
+];
 
 export default function DownloadPage() {
-  const [showDevTools, setShowDevTools] = useState(false);
-
   return (
-    <div className="min-h-screen" style={{ background: 'var(--bg-page)' }}>
-      {/* Header/Nav */}
-      <nav className="px-6 py-5 flex items-center justify-between" 
-           style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-        <Link to="/">
-          <Logo size={28} />
-        </Link>
-        
-        <div className="flex items-center gap-6">
-          <Link to="/how-it-works" 
-             style={{ font: 'var(--font-label)', color: 'var(--text-secondary)' }}>
-            How It Works
-          </Link>
-          <Link to="/pricing" 
-             style={{ font: 'var(--font-label)', color: 'var(--text-secondary)' }}>
-            Pricing
-          </Link>
-          <Link to="/auth" 
-                className="px-4 h-9 rounded-lg flex items-center transition-colors" 
-                style={{ 
-                  color: 'var(--text-primary)',
-                  background: 'var(--bg-elevated)',
-                  border: '1px solid var(--border-default)',
-                  font: 'var(--font-label)'
-                }}>
-            Sign In
-          </Link>
-        </div>
-      </nav>
+    <div className="website-page product-page min-h-screen">
+      <SiteNav />
+      <main className="product-shell product-download-shell">
+        <section className="product-intro product-intro-compact">
+          <p className="product-eyebrow">Desktop companion</p>
+          <h1>Bring guardrails into your editor.</h1>
+          <p className="product-lede">Install TokenGuard locally, connect your AI coding tools, and keep a clear view of the session while you work.</p>
+        </section>
 
-      {/* Content */}
-      <div className="px-6 py-20">
-        <div className="max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="text-center mb-12">
-            <h1 className="mb-4" style={{ 
-              font: '600 48px/1.1 var(--font-family-sans)',
-              color: 'var(--text-primary)',
-              letterSpacing: '-1px'
-            }}>
-              Download TokenGuard
-            </h1>
-            <p style={{ 
-              font: '400 18px/1.6 var(--font-family-sans)',
-              color: 'var(--text-secondary)' 
-            }}>
-              Choose your platform to get started
-            </p>
-          </div>
+        <section className="release-list" aria-label="TokenGuard downloads">
+          {releases.map((release) => {
+            const Icon = release.icon;
+            const available = release.status === 'Available now';
+            return (
+              <article className="release-row" key={release.platform}>
+                <div className="release-icon"><Icon className="h-5 w-5" /></div>
+                <div className="release-copy">
+                  <div className="release-title"><h2>{release.platform}</h2><span>{release.size}</span></div>
+                  <p>{release.detail}</p>
+                </div>
+                {available ? (
+                  <a href="#" className="release-download"><Download className="h-4 w-4" /> Download <ArrowRight className="h-4 w-4" /></a>
+                ) : (
+                  <span className="release-status">{release.status}</span>
+                )}
+              </article>
+            );
+          })}
+        </section>
 
-          {/* Download Cards */}
-          <div className="grid grid-cols-1 gap-4 mb-12">
-            <DownloadCard
-              icon={<Monitor className="w-6 h-6" />}
-              platform="Windows"
-              version="v1.2.4"
-              size="84.2 MB"
-              requirements="Windows 10 or later · x64"
-              downloadUrl="#"
-            />
-            <DownloadCard
-              icon={<Apple className="w-6 h-6" />}
-              platform="macOS"
-              version="v1.2.4"
-              size="92.8 MB"
-              requirements="macOS 11 (Big Sur) or later · Apple Silicon & Intel"
-              downloadUrl="#"
-            />
-            <DownloadCard
-              icon={<Github className="w-6 h-6" />}
-              platform="Linux"
-              version="v1.2.4"
-              size="88.1 MB"
-              requirements="Ubuntu 20.04+ · Debian 11+ · Fedora 36+"
-              downloadUrl="#"
-            />
-          </div>
+        <ConnectGuide />
 
-          {/* Additional Info */}
-          <div className="rounded-xl p-6" 
-               style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
-            <h3 className="mb-4" style={{ font: 'var(--font-label)', color: 'var(--text-primary)' }}>
-              What happens after download?
-            </h3>
-            <ol className="space-y-3">
-              <li className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center" 
-                      style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)', font: 'var(--font-caption)' }}>
-                  1
-                </span>
-                <span style={{ font: 'var(--font-body)', color: 'var(--text-secondary)' }}>
-                  Install TokenGuard on your system
-                </span>
-              </li>
-              <li className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center" 
-                      style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)', font: 'var(--font-caption)' }}>
-                  2
-                </span>
-                <span style={{ font: 'var(--font-body)', color: 'var(--text-secondary)' }}>
-                  Connect your AI coding tools (Cursor, Windsurf, Claude, etc.)
-                </span>
-              </li>
-              <li className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center" 
-                      style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)', font: 'var(--font-caption)' }}>
-                  3
-                </span>
-                <span style={{ font: 'var(--font-body)', color: 'var(--text-secondary)' }}>
-                  Set your guardrails and start coding with confidence
-                </span>
-              </li>
-            </ol>
-          </div>
-
-          {/* Release Notes Link */}
-          <div className="mt-8 text-center">
-            <a href="#" style={{ font: 'var(--font-caption)', color: 'var(--text-muted)' }}>
-              View release notes →
-            </a>
-          </div>
-        </div>
-      </div>
-
-      {/* DevTools Button */}
-      <button
-        onClick={() => setShowDevTools(true)}
-        className="fixed bottom-6 right-6 flex h-12 w-12 items-center justify-center rounded-2xl shadow-lg transition-opacity hover:opacity-80"
-        style={{ 
-          background: 'var(--bg-elevated)',
-          color: 'var(--text-primary)',
-          border: '1px solid var(--border-default)',
-          backdropFilter: 'var(--blur-elevated)',
-          WebkitBackdropFilter: 'var(--blur-elevated)',
-          cursor: 'pointer'
-        }}
-        title="Open DevTools"
-      >
-        <span style={{ font: '600 18px/1 var(--font-family-sans)' }}>{'</>'}</span>
-      </button>
-
-      {showDevTools && <DevToolsOverlay onClose={() => setShowDevTools(false)} />}
+        <p className="product-footnote">Need another platform? <Link to="/auth">Request access</Link>.</p>
+      </main>
     </div>
   );
 }
 
-function DownloadCard({ icon, platform, version, size, requirements, downloadUrl }: {
-  icon: React.ReactNode;
-  platform: string;
-  version: string;
-  size: string;
-  requirements: string;
-  downloadUrl: string;
-}) {
+const connectionOptions = [
+  { id: 'codex', label: 'Codex', detail: 'Recommended', command: 'tokenguard connect codex', icon: Terminal },
+  { id: 'cursor', label: 'Cursor', detail: 'Extension', command: 'tokenguard connect cursor', icon: Monitor },
+  { id: 'api', label: 'API', detail: 'OpenAI', command: 'tokenguard connect openai', icon: Code2 },
+];
+
+function ConnectGuide() {
+  const [selectedId, setSelectedId] = useState('codex');
+  const [copied, setCopied] = useState(false);
+  const selected = connectionOptions.find((option) => option.id === selectedId) ?? connectionOptions[0];
+  const Icon = selected.icon;
+
+  const copyCommand = async () => {
+    await navigator.clipboard?.writeText(selected.command);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1600);
+  };
+
   return (
-    <a
-      href={downloadUrl}
-      className="rounded-xl p-6 flex items-center justify-between group transition-colors"
-      style={{ 
-        background: 'var(--bg-card)', 
-        border: '1px solid var(--border-default)',
-        textDecoration: 'none'
-      }}
-    >
-      <div className="flex items-center gap-4">
-        <div className="w-12 h-12 rounded-lg flex items-center justify-center" 
-             style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)' }}>
-          {icon}
+    <section className="connect-guide" aria-label="Connect TokenGuard to your coding tool">
+      <div className="connect-guide-steps">
+        <p className="product-eyebrow">Then connect a tool</p>
+        <h2>Protected coding in a few steps.</h2>
+        <ol>
+          <li><span>a</span> Install TokenGuard</li>
+          <li><span>b</span> Select your coding tool</li>
+          <li><span>c</span> Run the connection command</li>
+          <li><span>d</span> Start a protected session</li>
+        </ol>
+      </div>
+
+      <div className="connect-guide-panel">
+        <div className="connect-tabs" role="tablist" aria-label="Connection method">
+          {connectionOptions.map((option) => {
+            const TabIcon = option.icon;
+            const active = option.id === selected.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                className={active ? 'is-active' : ''}
+                onClick={() => setSelectedId(option.id)}
+                role="tab"
+                aria-selected={active}
+              >
+                <TabIcon className="h-4 w-4" />
+                <span><strong>{option.label}</strong><small>{option.detail}</small></span>
+              </button>
+            );
+          })}
         </div>
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <h3 style={{ font: 'var(--font-label)', fontSize: '18px', color: 'var(--text-primary)' }}>
-              {platform}
-            </h3>
-            <span className="px-2 py-0.5 rounded" 
-                  style={{ background: 'var(--bg-elevated)', font: 'var(--font-caption)', color: 'var(--text-muted)' }}>
-              {version}
-            </span>
-            <span style={{ font: 'var(--font-caption)', color: 'var(--text-muted)' }}>
-              {size}
-            </span>
+        <div className="connect-command-content">
+          <div className="connect-command-heading"><Icon className="h-4 w-4" /> Connect TokenGuard to {selected.label}</div>
+          <div className="connect-command-box">
+            <code><span>$</span> {selected.command}</code>
+            <button type="button" onClick={() => void copyCommand()}>{copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}{copied ? 'Copied' : 'Copy'}</button>
           </div>
-          <p style={{ font: 'var(--font-caption)', color: 'var(--text-secondary)' }}>
-            {requirements}
-          </p>
+          <div className="connect-command-foot"><span>Runs locally on your machine.</span><Link to="/how-it-works">How TokenGuard works <ArrowRight className="h-3.5 w-3.5" /></Link></div>
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        <Download className="w-5 h-5" style={{ color: 'var(--text-secondary)' }} />
-        <ChevronRight className="w-5 h-5 transition-transform group-hover:translate-x-1" 
-                      style={{ color: 'var(--text-muted)' }} />
-      </div>
-    </a>
+    </section>
   );
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { Activity, Shield, Clock, Settings as SettingsIcon, Wrench } from 'lucide-react';
-import { Logo, LogoIcon } from './Logo';
+import { LogoIcon } from './Logo';
 import { useDaemonState } from '../providers/DaemonProvider';
 import { getWebsitePricingUrl } from '../lib/externalLinks';
 
@@ -55,8 +55,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <LogoIcon size={24} />
           <div className="sidebar-copy min-w-0">
             <p style={{ font: 'var(--font-caption)', color: 'var(--text-muted)' }}>Workspace</p>
-            <div className="mt-1">
-              <Logo size={18} />
+            <div
+              className="mt-1 whitespace-nowrap"
+              style={{
+                color: 'var(--text-primary)',
+                font: '500 18px/1 var(--font-family-display)',
+                letterSpacing: '-0.035em',
+              }}
+            >
+              Token<span style={{ color: 'var(--text-secondary)', fontWeight: 400 }}>Guard</span>
             </div>
           </div>
         </Link>
@@ -70,7 +77,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 key={item.path}
                 to={item.path}
                 title={item.label}
-                className="sidebar-nav-item flex items-center gap-3 rounded-xl px-3 py-3"
+                className="sidebar-nav-item flex items-center gap-3 rounded-lg px-3 py-2.5"
                 style={{
                   background: isActive ? 'var(--bg-card)' : 'transparent',
                   border: `1px solid ${isActive ? 'var(--border-subtle)' : 'transparent'}`,
@@ -89,7 +96,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="min-w-[220px] px-3 pb-4">
           <a
             href={pricingUrl}
-            className="sidebar-plan flex items-center gap-3 rounded-xl px-3 py-2.5"
+            className="sidebar-plan flex items-center gap-3 rounded-lg px-3 py-2.5"
             style={{
               background: 'var(--bg-elevated)',
               border: '1px solid var(--border-subtle)',
@@ -107,9 +114,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+      <div className="dashboard-content flex min-w-0 flex-1 flex-col overflow-hidden">
         <div className="flex-1 overflow-y-auto overflow-x-hidden">
-          <div className="mx-auto w-full max-w-[1080px] px-3 py-3 sm:px-4 sm:py-4 lg:px-5 lg:py-5">
+          <div className="mx-auto w-full max-w-[1120px] px-4 py-4 sm:px-5 sm:py-5 lg:px-6 lg:py-6">
             {children}
           </div>
         </div>

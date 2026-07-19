@@ -24,7 +24,7 @@ export default function Onboarding() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-page)' }}>
+    <div className="website-page min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-page)' }}>
       <div className="max-w-2xl w-full px-6">
         {/* Header */}
         <div className="text-center mb-12">
