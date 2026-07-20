@@ -6,6 +6,7 @@ Current layout:
 
 - `website` - marketing/acquisition website flow
 - `dashboard` - product dashboard flow (still web-based for now)
+- `daemon` - local server for connecting with AI IDEs
 
 # How to run in terminal (for developer) 
 
