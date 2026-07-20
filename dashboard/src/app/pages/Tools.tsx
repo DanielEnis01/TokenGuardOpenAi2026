@@ -66,17 +66,13 @@ export default function Tools() {
         }}
         onRun={() => void runInstall()}
         title="Install a local TokenGuard connector"
-        description="TokenGuard will run the connector install command locally through the daemon. Codex is the primary live connector in this build."
+        description="Run the selected local connector command."
       />
 
       <div className="dashboard-page p-7" style={{ background: 'transparent' }}>
         <div className="dashboard-page-header">
           <p className="dashboard-page-kicker">Connections</p>
           <h2 className="dashboard-page-title">Tools</h2>
-          <p className="dashboard-page-description">Connect the coding environments TokenGuard should monitor.</p>
-          <p className="mt-2" style={{ font: 'var(--font-caption)', color: 'var(--text-muted)' }}>
-            Connecting a tool runs the local `tokenguard connect &lt;tool&gt;` CLI flow through the daemon after you confirm.
-          </p>
           {errorMessage ? (
             <p className="mt-2" style={{ font: 'var(--font-caption)', color: 'var(--status-danger)' }}>
               {errorMessage}
@@ -91,7 +87,7 @@ export default function Tools() {
         </div>
 
         <div
-          className="rounded-lg p-4"
+          className="liquid-glass-card bento-card rounded-lg p-4"
           style={{
             background: 'var(--bg-elevated)',
             border: '1px solid var(--border-subtle)',
@@ -100,8 +96,7 @@ export default function Tools() {
           }}
         >
           <p style={{ font: 'var(--font-caption)', color: 'var(--text-muted)', lineHeight: '1.6' }}>
-            TokenGuard connects via local session logs, IDE hooks, and API proxies. No prompt content is ever read, only
-            metadata. In this build, Codex is the primary fully wired connector.
+            Local metadata only. Prompt content stays private.
           </p>
         </div>
       </div>
@@ -124,7 +119,7 @@ function ToolCard({
 
   return (
     <div
-      className="flex items-center justify-between rounded-xl p-5"
+      className="liquid-glass-card bento-card flex items-center justify-between rounded-xl p-5"
       style={{
         background: 'var(--bg-elevated)',
         border: '1px solid var(--border-subtle)',
@@ -151,17 +146,17 @@ function ToolCard({
               {isImplemented ? 'ready now' : 'coming later'}
             </span>
           </div>
-          <div style={{ font: 'var(--font-caption)', color: 'var(--text-muted)' }}>
-            {isConnected
-              ? 'Connected'
-              : isConnecting
+          {!isConnected ? (
+            <div style={{ font: 'var(--font-caption)', color: 'var(--text-muted)' }}>
+              {isConnecting
                 ? 'Running install command...'
                 : tool.status === 'error'
                   ? tool.errorMessage ?? 'Needs attention'
                   : 'Not connected'}
-          </div>
+            </div>
+          ) : null}
           <div className="mt-1" style={{ font: 'var(--font-caption)', color: 'var(--text-secondary)' }}>
-            {tool.lastSeenAt ? `Last seen ${formatRelativeTime(tool.lastSeenAt)}` : tool.command}
+            {isConnected && tool.lastSeenAt ? `Seen ${formatRelativeTime(tool.lastSeenAt)}` : tool.command}
           </div>
         </div>
       </div>

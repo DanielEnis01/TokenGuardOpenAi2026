@@ -14,7 +14,6 @@ export default function History() {
           <div>
             <p className="dashboard-page-kicker">Session history</p>
             <h1 className="dashboard-page-title">Recorded sessions</h1>
-            <p className="dashboard-page-description">Review spend, duration, and intervention outcomes over time.</p>
           </div>
           <button
             type="button"
@@ -43,7 +42,7 @@ export default function History() {
         </section>
 
         <section
-          className="rounded-[20px] p-4 sm:p-5"
+          className="liquid-glass-card bento-card rounded-[20px] p-4 sm:p-5"
           style={{
             background: 'var(--bg-card)',
             border: '1px solid var(--border-subtle)',
@@ -123,7 +122,7 @@ export default function History() {
             </>
           ) : (
             <div
-              className="rounded-[16px] px-5 py-12 text-center"
+              className="liquid-glass-inset rounded-[16px] px-5 py-12 text-center"
               style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}
             >
               <p style={{ font: 'var(--font-label)', color: 'var(--text-primary)' }}>
@@ -154,7 +153,7 @@ function StatCard({
 
   return (
     <article
-      className="rounded-[18px] p-4"
+      className="liquid-glass-card bento-card rounded-[18px] p-4"
       style={{
         background: 'var(--bg-card)',
         border: '1px solid var(--border-subtle)',

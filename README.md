@@ -6,39 +6,32 @@ Current layout:
 
 - `website` - marketing/acquisition website flow
 - `dashboard` - product dashboard flow (still web-based for now)
+- `daemon` - local server for connecting with AI IDEs
 
-## Why the split
+# How to run in terminal (for developer) 
 
-Per the product workflow:
-
-1. Website drives awareness and download.
-2. Dashboard is the product experience.
-3. Desktop executable comes later (pivot path to Tauri/Electron).
-
-Both apps are intentionally web frontends today to speed up iteration before desktop packaging.
-
-## Run the website frontend
-
-```bash
-cd website
-npm install
-npm run dev
-```
-
-## Run the dashboard frontend
+### Dashboard
 
 ```bash
 cd dashboard
-npm install
+npm install   # first time only
 npm run dev
 ```
 
-## Build checks
-
-Both apps currently build successfully with:
+### Website
 
 ```bash
-npm run build
+cd website
+npm install   # first time only
+npm run dev
+```
+
+### Daemon
+
+```bash
+cd daemon
+npm install   # first time only
+npm run start
 ```
 
 ## Firebase Integration Setup

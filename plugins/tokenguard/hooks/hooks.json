@@ -1,0 +1,19 @@
+{
+  "description": "TokenGuard blocks repeated Codex patches before they run.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^(apply_patch|Bash)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$PLUGIN_ROOT/scripts/authorize-edit.mjs\"",
+            "commandWindows": "node \"%PLUGIN_ROOT%\\scripts\\authorize-edit.mjs\"",
+            "timeout": 5,
+            "statusMessage": "Checking TokenGuard guardrails"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -47,7 +47,7 @@ export function IDESelector({ onContinue }: { onContinue?: () => void }) {
                 ? '1px solid var(--accent)' 
                 : '1px solid var(--border-default)',
               cursor: 'pointer',
-              boxShadow: selected.includes(ide.id) ? '0 20px 40px rgba(79,70,229,0.10)' : 'none',
+              boxShadow: selected.includes(ide.id) ? '0 20px 40px rgba(255,255,255,0.08)' : 'none',
             }}
           >
             {selected.includes(ide.id) && (
@@ -82,7 +82,7 @@ export function IDESelector({ onContinue }: { onContinue?: () => void }) {
           }}
           className="h-12 rounded-full px-6 transition-opacity"
           style={{ 
-            background: selected.length > 0 ? '#020617' : 'var(--bg-elevated)',
+            background: selected.length > 0 ? '#111111' : 'var(--bg-elevated)',
             color: selected.length > 0 ? 'white' : 'var(--text-muted)',
             font: '600 14px/1 var(--font-family-sans)',
             border: 'none',

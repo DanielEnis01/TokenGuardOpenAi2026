@@ -25,7 +25,6 @@ export default function Settings() {
           <div className="dashboard-page-header">
             <p className="dashboard-page-kicker">Workspace</p>
             <h2 className="dashboard-page-title">Settings</h2>
-            <p className="dashboard-page-description">Account preferences and local data controls.</p>
           </div>
 
           <Section title="Account">
@@ -127,7 +126,7 @@ export default function Settings() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div
-      className="mb-8 rounded-2xl px-5 py-5"
+      className="liquid-glass-card bento-card mb-8 rounded-2xl px-5 py-5"
       style={{
         background: 'var(--bg-card)',
         border: '1px solid var(--border-subtle)',
