@@ -105,7 +105,7 @@ export function createEditAuthorizer(getConfig: () => GuardrailConfig) {
         return;
       }
 
-      if (event.type === 'agent_stopped') {
+      if (event.type === 'stop_requested' || event.type === 'agent_stopped') {
         stoppedSessions.add(event.sessionId);
         return;
       }

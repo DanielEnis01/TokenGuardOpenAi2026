@@ -37,8 +37,11 @@ export function parseSessionEvent(body: unknown): SessionEvent {
     throw new Error('filePath is required for file_write events.');
   }
 
-  if (event.type === 'agent_stopped' && !isAgentStopReason(event.reason)) {
-    throw new Error('reason is required for agent_stopped events.');
+  if (
+    (event.type === 'stop_requested' || event.type === 'agent_stopped') &&
+    !isAgentStopReason(event.reason)
+  ) {
+    throw new Error(`reason is required for ${event.type} events.`);
   }
 
   if (event.type === 'budget_threshold') {

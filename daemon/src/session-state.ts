@@ -103,12 +103,27 @@ function reduceSessionEvent(
       };
 
     case 'file_write':
-      return currentState;
+      // A write after any stop request is proof the process is still live.
+      // Keep the request for the UI, but never present it as a completed stop.
+      return {
+        ...currentState,
+        agentStatus: 'running',
+        lastActivityAt: event.timestamp,
+      };
 
     case 'budget_threshold':
       return {
         ...currentState,
         lastBudgetThreshold: cloneBudgetThresholdEvent(event),
+      };
+
+    case 'stop_requested':
+      return {
+        ...currentState,
+        stopRequestCount: currentState.stopRequestCount + 1,
+        lastStopRequestedAt: event.timestamp,
+        lastStopRequestReason: event.reason,
+        lastStopRequestFilePath: event.filePath ?? null,
       };
 
     case 'agent_stopped':

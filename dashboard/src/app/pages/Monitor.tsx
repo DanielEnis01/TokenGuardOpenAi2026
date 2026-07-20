@@ -44,6 +44,11 @@ export default function Monitor() {
   const spiralsStopped = Math.max(0, currentSession.spiralsCaughtToday - currentSession.activeSpirals.length);
   const primaryActiveSpiral = currentSession.activeSpirals[0] ?? null;
   const hasActiveSession = Boolean(currentSession.sessionId);
+  const editsContinuedAfterStopRequest = Boolean(
+    currentSession.lastStopRequestedAt &&
+      currentSession.lastActivityAt &&
+      currentSession.lastActivityAt > currentSession.lastStopRequestedAt,
+  );
   const displayedLoopRows = [
     ...currentSession.activeSpirals.map((spiral) => ({
       status: 'active' as const,
@@ -164,6 +169,16 @@ export default function Monitor() {
             description={describeStopReason(
               currentSession.lastStopReason,
               currentSession.lastStoppedFilePath,
+            )}
+          />
+        ) : currentSession.lastStopRequestedAt ? (
+          <InterventionBanner
+            tone={editsContinuedAfterStopRequest ? 'danger' : 'warn'}
+            title={editsContinuedAfterStopRequest ? 'Edits are continuing after the stop request' : 'Stop requested'}
+            description={describeStopRequest(
+              currentSession.lastStopRequestReason,
+              currentSession.lastStopRequestFilePath,
+              editsContinuedAfterStopRequest,
             )}
           />
         ) : !isUsingMockData && currentSession.lastBudgetThreshold ? (
@@ -374,7 +389,10 @@ export default function Monitor() {
                           type="button"
                           onClick={() => {
                             if (!isUsingMockData) {
-                              void resolveSpiral(row.file, 'stop');
+                              // The table and the primary control must take the
+                              // same action. Otherwise one panel can claim a
+                              // stop while the other still sees live edits.
+                              void stopSession();
                             }
                           }}
                           className="rounded-lg px-3 py-1.5"
@@ -454,8 +472,17 @@ function LiveSessionPanel({
 }) {
   const hasActiveSession = Boolean(session.sessionId);
   const isStopped = session.agentStatus === 'stopped';
+  const editsContinuedAfterStopRequest = Boolean(
+    session.lastStopRequestedAt &&
+      session.lastActivityAt &&
+      session.lastActivityAt > session.lastStopRequestedAt,
+  );
   const statusTone = isStopped
     ? 'var(--status-danger)'
+    : editsContinuedAfterStopRequest
+      ? 'var(--status-danger)'
+      : session.lastStopRequestedAt
+        ? 'var(--status-warn)'
     : primaryActiveSpiral
       ? 'var(--status-warn)'
       : hasActiveSession
@@ -464,6 +491,10 @@ function LiveSessionPanel({
 
   const statusLabel = isStopped
     ? 'Agent stopped'
+    : editsContinuedAfterStopRequest
+      ? 'Edits still running'
+      : session.lastStopRequestedAt
+        ? 'Stop requested'
     : primaryActiveSpiral
       ? 'Spiral detected'
       : hasActiveSession
@@ -510,6 +541,8 @@ function LiveSessionPanel({
             <p className="mt-2" style={{ font: 'var(--font-caption)', color: 'var(--text-secondary)' }}>
               {primaryActiveSpiral
                 ? `${truncatePath(primaryActiveSpiral.filePath)} is spiraling and needs a decision now.`
+                : editsContinuedAfterStopRequest
+                  ? 'Codex is still producing edits after TokenGuard requested a stop.'
                 : hasActiveSession
                   ? 'Key session details and quick controls are centralized here.'
                   : 'Launch a session or run a smoke command and TokenGuard will surface live telemetry here.'}
@@ -561,6 +594,8 @@ function SessionActionsPanel({
 }) {
   const hasActiveSession = Boolean(session.sessionId);
   const isStopped = session.agentStatus === 'stopped';
+  const stopWasRequested = Boolean(session.lastStopRequestedAt);
+  const canRequestStop = hasActiveSession && !isStopped;
 
   return (
     <aside className="liquid-glass-card bento-card flex flex-col rounded-[12px] p-5 sm:p-6">
@@ -575,18 +610,18 @@ function SessionActionsPanel({
         <button
           type="button"
           onClick={onStopAgent}
-          disabled={!hasActiveSession || isStopped}
+          disabled={!canRequestStop}
           className="rounded-xl px-4 py-3 transition-opacity"
           style={{
-            background: hasActiveSession && !isStopped ? 'rgba(255,255,255,0.12)' : 'var(--bg-card)',
+            background: canRequestStop ? 'rgba(224, 85, 85, 0.12)' : 'var(--bg-card)',
             border: '1px solid var(--border-subtle)',
-            color: hasActiveSession && !isStopped ? 'var(--text-primary)' : 'var(--text-muted)',
+            color: canRequestStop ? 'var(--status-danger)' : 'var(--text-muted)',
             font: 'var(--font-label)',
-            opacity: hasActiveSession && !isStopped ? 1 : 0.65,
-            cursor: hasActiveSession && !isStopped ? 'pointer' : 'not-allowed',
+            opacity: canRequestStop ? 1 : 0.65,
+            cursor: canRequestStop ? 'pointer' : 'not-allowed',
           }}
         >
-          {isStopped ? 'Agent stopped' : 'Stop agent'}
+          {isStopped ? 'Agent stopped' : stopWasRequested ? 'Send stop again' : 'Stop agent'}
         </button>
         <Link
           to="/guardrails"
@@ -981,6 +1016,24 @@ function describeStopReason(
     default:
       return 'The current session is stopped until a new session begins.';
   }
+}
+
+function describeStopRequest(
+  reason: ReturnType<typeof useDaemonState>['session']['lastStopRequestReason'],
+  filePath: string | null,
+  editsAreContinuing: boolean,
+): string {
+  const prefix = filePath ? `${filePath} triggered a stop request. ` : 'TokenGuard sent a stop request. ';
+
+  if (editsAreContinuing) {
+    return `${prefix}Codex is still writing, so the request has not stopped the active command. You can send it again.`;
+  }
+
+  if (reason === 'auto_stopped') {
+    return `${prefix}TokenGuard has blocked the next matching edit request and is waiting to verify that activity ends.`;
+  }
+
+  return `${prefix}TokenGuard has blocked future matching edit requests and is waiting to verify that activity ends.`;
 }
 
 function formatBudgetThresholdTitle(scope: 'session' | 'monthly' | 'context_window'): string {

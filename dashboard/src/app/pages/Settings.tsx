@@ -1,20 +1,63 @@
 import { AppShell } from '../components/AppShell';
 import { LogOut, CreditCard, User, Bell, Shield, Database } from 'lucide-react';
 import { useNavigate } from 'react-router';
+import { useState } from 'react';
 import { getWebsitePricingUrl } from '../lib/externalLinks';
 
 export default function Settings() {
   const navigate = useNavigate();
   const pricingUrl = getWebsitePricingUrl();
+  const [profileEmail, setProfileEmail] = useState('demo@tokenguard.dev');
+  const [profileDraft, setProfileDraft] = useState(profileEmail);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [windowsNotifications, setWindowsNotifications] = useState(() =>
+    typeof Notification !== 'undefined' && Notification.permission === 'granted',
+  );
+  const [budgetWarnings, setBudgetWarnings] = useState(true);
+  const [weeklyReports, setWeeklyReports] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState<string | null>(null);
 
   const handleLogout = () => {
     navigate('/');
   };
 
+  const toggleWindowsNotifications = async (enabled: boolean) => {
+    if (!enabled) {
+      setWindowsNotifications(false);
+      setNotificationMessage(null);
+      return;
+    }
+
+    if (typeof Notification === 'undefined') {
+      setNotificationMessage('Windows notifications are unavailable in this view.');
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+    const granted = permission === 'granted';
+    setWindowsNotifications(granted);
+    setNotificationMessage(granted ? null : 'Allow Windows notifications to enable alerts.');
+  };
+
+  const exportData = () => {
+    const payload = {
+      profileEmail,
+      notifications: { windowsNotifications, budgetWarnings, weeklyReports },
+      exportedAt: new Date().toISOString(),
+    };
+    const file = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const downloadUrl = URL.createObjectURL(file);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = 'tokenguard-settings.json';
+    link.click();
+    URL.revokeObjectURL(downloadUrl);
+  };
+
   return (
     <AppShell>
       <div className="dashboard-page p-7" style={{ background: 'transparent' }}>
-        <div className="max-w-3xl">
+        <div className="mx-auto max-w-3xl">
           <div className="dashboard-page-header">
             <p className="dashboard-page-kicker">Workspace</p>
             <h2 className="dashboard-page-title">Settings</h2>
@@ -24,17 +67,23 @@ export default function Settings() {
             <SettingRow
               icon={<User className="w-5 h-5" />}
               label="Profile"
-              description="demo@tokenguard.dev"
+              description={profileEmail}
               action={
-                <button className="px-3 py-1.5 rounded-md transition-colors"
-                        style={{ 
-                          background: 'var(--bg-elevated)',
-                          border: '1px solid var(--border-default)',
-                          color: 'var(--text-primary)',
-                          font: 'var(--font-label)'
-                        }}>
-                  Edit
-                </button>
+                isEditingProfile ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      aria-label="Profile email"
+                      type="email"
+                      value={profileDraft}
+                      onChange={(event) => setProfileDraft(event.target.value)}
+                      className="w-44 rounded-md px-2 py-1.5"
+                      style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', font: 'var(--font-caption)' }}
+                    />
+                    <button type="button" onClick={() => { setProfileEmail(profileDraft); setIsEditingProfile(false); }} className="rounded-md px-3 py-1.5" style={{ background: 'var(--text-primary)', color: '#111', font: 'var(--font-label)' }}>Save</button>
+                  </div>
+                ) : (
+                  <button type="button" onClick={() => { setProfileDraft(profileEmail); setIsEditingProfile(true); }} className="rounded-md px-3 py-1.5" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', color: 'var(--text-primary)', font: 'var(--font-label)' }}>Edit</button>
+                )
               }
             />
             <SettingRow
@@ -62,21 +111,21 @@ export default function Settings() {
           <Section title="Notifications">
             <SettingRow
               icon={<Bell className="w-5 h-5" />}
-              label="Email Alerts"
-              description="Get notified when spirals are detected"
-              action={<Toggle checked={true} />}
+              label="Windows notifications"
+              description={notificationMessage ?? 'Spiral and stop alerts'}
+              action={<Toggle checked={windowsNotifications} onChange={toggleWindowsNotifications} label="Windows notifications" />}
             />
             <SettingRow
               icon={<Bell className="w-5 h-5" />}
               label="Budget Warnings"
               description="Alert when approaching budget limits"
-              action={<Toggle checked={true} />}
+              action={<Toggle checked={budgetWarnings} onChange={setBudgetWarnings} label="Budget warnings" />}
             />
             <SettingRow
               icon={<Bell className="w-5 h-5" />}
               label="Weekly Reports"
               description="Summary of token usage and savings"
-              action={<Toggle checked={false} />}
+              action={<Toggle checked={weeklyReports} onChange={setWeeklyReports} label="Weekly reports" />}
             />
           </Section>
 
@@ -96,7 +145,7 @@ export default function Settings() {
               label="Export Data"
               description="Download all your session history and settings"
               action={
-                <button className="px-3 py-1.5 rounded-md transition-colors"
+                <button type="button" onClick={exportData} className="px-3 py-1.5 rounded-md transition-colors"
                         style={{ 
                           background: 'var(--bg-elevated)',
                           border: '1px solid var(--border-default)',
@@ -188,17 +237,18 @@ function SettingRow({ icon, label, description, action }: {
   );
 }
 
-function Toggle({ checked }: { checked: boolean }) {
+function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (checked: boolean) => void; label: string }) {
   return (
-    <div className="relative w-9 h-5 rounded-full transition-colors cursor-pointer"
+    <button type="button" role="switch" aria-checked={checked} aria-label={label} onClick={() => onChange(!checked)} className="relative h-5 w-9 rounded-full transition-colors"
          style={{ 
            background: checked ? 'var(--status-ok)' : 'var(--bg-elevated)',
-           border: checked ? 'none' : '1px solid var(--border-default)'
+           border: checked ? 'none' : '1px solid var(--border-default)',
+           cursor: 'pointer',
          }}>
       <div className="absolute top-0.5 transition-transform w-4 h-4 bg-white rounded-full"
            style={{ 
              left: checked ? 'calc(100% - 18px)' : '2px'
-           }}></div>
-    </div>
+           }} />
+    </button>
   );
 }

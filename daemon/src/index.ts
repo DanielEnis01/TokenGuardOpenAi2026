@@ -484,7 +484,7 @@ function createSpiralInterventionEvents(
 
   if (decision === 'stop') {
     events.push({
-      type: 'agent_stopped',
+      type: 'stop_requested',
       sessionId,
       tool,
       timestamp,
@@ -515,17 +515,8 @@ function createSessionStopEvents(
   const firstSpiral = activeSpirals[0] ?? null;
 
   return [
-    ...activeSpirals.map((spiral) => ({
-      type: 'spiral_stop' as const,
-      sessionId,
-      tool,
-      timestamp,
-      filePath: spiral.filePath,
-      reason: 'user_confirmed' as const,
-      costSavedUsd: spiral.estimatedWasteUsd ?? null,
-    })),
     {
-      type: 'agent_stopped' as const,
+      type: 'stop_requested' as const,
       sessionId,
       tool,
       timestamp,
@@ -561,6 +552,8 @@ function summarizeEvent(event: SessionEvent): string {
       return `context_pressure session=${event.sessionId} percent=${event.percent} used=${event.tokensUsed}/${event.tokensTotal}`;
     case 'agent_stopped':
       return `agent_stopped session=${event.sessionId} reason=${event.reason}${event.filePath ? ` file=${event.filePath}` : ''}`;
+    case 'stop_requested':
+      return `stop_requested session=${event.sessionId} reason=${event.reason}${event.filePath ? ` file=${event.filePath}` : ''}`;
     case 'burn_rate_update':
       return `burn_rate_update session=${event.sessionId} tokensPerMin=${event.tokensPerMin}`;
   }

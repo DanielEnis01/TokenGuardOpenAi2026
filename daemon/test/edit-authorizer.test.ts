@@ -52,11 +52,11 @@ test('keeps a stopped file locked until the user explicitly continues', () => {
   assert.equal(authorizer.authorize(request(6_000)).allowed, true);
 });
 
-test('blocks every later edit after the dashboard stops the session', () => {
+test('blocks every later edit after the dashboard requests a stop', () => {
   const authorizer = createAuthorizer();
 
   authorizer.processEvent({
-    type: 'agent_stopped',
+    type: 'stop_requested',
     sessionId: 'session-1',
     tool: 'codex',
     timestamp: 1_000,
