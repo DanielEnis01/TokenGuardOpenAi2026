@@ -9,7 +9,9 @@
     "check": "tsc --noEmit -p tsconfig.json",
     "test": "node --experimental-strip-types --test test/codex-watcher.test.ts test/edit-authorizer.test.ts test/session-state.test.ts",
     "smoke:spiral": "node scripts/smoke-spiral.mjs",
-    "smoke:enforcement": "node scripts/smoke-enforcement.mjs"
+    "smoke:enforcement": "node scripts/smoke-enforcement.mjs",
+    "smoke:codex-tokens": "node --experimental-strip-types scripts/smoke-codex-tokens.ts",
+    "smoke:rule-results": "node --experimental-strip-types scripts/smoke-rule-results.ts"
   },
   "engines": {
     "node": ">=22.14.0"

@@ -44,11 +44,7 @@ export default function Monitor() {
   const spiralsStopped = Math.max(0, currentSession.spiralsCaughtToday - currentSession.activeSpirals.length);
   const primaryActiveSpiral = currentSession.activeSpirals[0] ?? null;
   const hasActiveSession = Boolean(currentSession.sessionId);
-  const editsContinuedAfterStopRequest = Boolean(
-    currentSession.lastStopRequestedAt &&
-      currentSession.lastActivityAt &&
-      currentSession.lastActivityAt > currentSession.lastStopRequestedAt,
-  );
+  const hasTokenUsage = currentSession.totalTokens > 0;
   const displayedLoopRows = [
     ...currentSession.activeSpirals.map((spiral) => ({
       status: 'active' as const,
@@ -194,7 +190,13 @@ export default function Monitor() {
             label="Tokens This Session"
             value={formatInteger(currentSession.totalTokens)}
             status={sessionPercent > 90 ? 'danger' : sessionPercent > 70 ? 'warn' : 'default'}
-            detail={hasActiveSession ? `+${formatInteger(currentSession.burnRatePerMin)} / min` : 'Waiting for session events'}
+            detail={
+              hasTokenUsage
+                ? `${formatInteger(currentSession.tokensIn)} in • ${formatInteger(currentSession.tokensOut)} out`
+                : hasActiveSession
+                  ? 'Waiting for token usage from the coding tool'
+                  : 'Waiting for session events'
+            }
           />
           <MetricCard
             label="Session Cost"
@@ -621,24 +623,14 @@ function SessionActionsPanel({
             cursor: canRequestStop ? 'pointer' : 'not-allowed',
           }}
         >
-          {isStopped ? 'Stop enforced' : stopWasRequested ? 'Send stop again' : 'Stop agent'}
-        </button>
-        <Link
-          to="/guardrails"
-          className="mt-2 rounded-xl px-4 py-3 text-center"
-          style={{
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border-subtle)',
-            color: 'var(--text-primary)',
-            font: 'var(--font-label)',
-          }}
-        >
-          Review guardrails
-        </Link>
-      </div>
-    </aside>
-  );
-}
+          <div className="grid grid-cols-2 gap-3">
+            <QuickStat label="Tokens" value={formatInteger(session.totalTokens)} />
+            <QuickStat label="Input" value={formatInteger(session.tokensIn)} />
+            <QuickStat label="Output" value={formatInteger(session.tokensOut)} />
+            <QuickStat label="Cost" value={`$${session.sessionCostUsd.toFixed(2)}`} />
+            <QuickStat label="Burn" value={`${formatInteger(session.burnRatePerMin)}/m`} />
+            <QuickStat label="Context" value={`${session.contextPercent}%`} />
+          </div>
 
 function ActivityPanel({ hasTimelineEvents }: { hasTimelineEvents: boolean }) {
   return (

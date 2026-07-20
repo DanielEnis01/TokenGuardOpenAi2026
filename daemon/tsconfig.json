@@ -10,6 +10,5 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["src/**/*.ts", "../shared/**/*.ts"],
-  "exclude": ["../shared/firebase.ts"]
+  "include": ["src/**/*.ts", "scripts/**/*.ts", "../shared/**/*.ts"]
 }
