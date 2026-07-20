@@ -19,6 +19,7 @@ export type SessionEventType =
   | 'spiral_stop'
   | 'budget_threshold'
   | 'context_pressure'
+  | 'stop_requested'
   | 'agent_stopped'
   | 'burn_rate_update';
 
@@ -104,6 +105,17 @@ export interface AgentStoppedEvent extends BaseSessionEvent {
   filePath?: string | null;
 }
 
+/**
+ * A control request has been sent, but the daemon has not observed a real
+ * session end yet. This distinction keeps the dashboard honest when Codex is
+ * already inside a long-running command.
+ */
+export interface StopRequestedEvent extends BaseSessionEvent {
+  type: 'stop_requested';
+  reason: AgentStopReason;
+  filePath?: string | null;
+}
+
 export interface BurnRateUpdateEvent extends BaseSessionEvent {
   type: 'burn_rate_update';
   tokensPerMin: number;
@@ -118,6 +130,7 @@ export type SessionEvent =
   | SpiralStopEvent
   | BudgetThresholdEvent
   | ContextPressureEvent
+  | StopRequestedEvent
   | AgentStoppedEvent
   | BurnRateUpdateEvent;
 
@@ -148,6 +161,11 @@ export interface CurrentSessionState {
   spiralsCaughtToday: number;
   activeSpirals: ActiveSpiral[];
   lastBudgetThreshold: BudgetThresholdEvent | null;
+  lastActivityAt: number | null;
+  stopRequestCount: number;
+  lastStopRequestedAt: number | null;
+  lastStopRequestReason: AgentStopReason | null;
+  lastStopRequestFilePath: string | null;
   lastStopReason: AgentStopReason | null;
   lastStoppedAt: number | null;
   lastStoppedFilePath: string | null;
@@ -198,6 +216,7 @@ export const SESSION_EVENT_TYPES: SessionEventType[] = [
   'spiral_stop',
   'budget_threshold',
   'context_pressure',
+  'stop_requested',
   'agent_stopped',
   'burn_rate_update',
 ];
@@ -220,6 +239,11 @@ export const EMPTY_CURRENT_SESSION_STATE: CurrentSessionState = {
   spiralsCaughtToday: 0,
   activeSpirals: [],
   lastBudgetThreshold: null,
+  lastActivityAt: null,
+  stopRequestCount: 0,
+  lastStopRequestedAt: null,
+  lastStopRequestReason: null,
+  lastStopRequestFilePath: null,
   lastStopReason: null,
   lastStoppedAt: null,
   lastStoppedFilePath: null,

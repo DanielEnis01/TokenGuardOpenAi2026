@@ -10,6 +10,7 @@ import { saveGuardrailConfig, loadGuardrailConfig } from './config-store.ts';
 import { loadToolConnections, touchToolConnectionActivity, upsertToolConnection } from './connection-store.ts';
 import { createCodexWatcher } from './codex-watcher.ts';
 import { createDatabase } from './database.ts';
+import { createEditAuthorizer } from './edit-authorizer.ts';
 import { parseSessionEvent } from './events.ts';
 import { createGuardrailEnforcer } from './guardrail-enforcer.ts';
 import { createSpiralDetector } from './spiral-detector.ts';
@@ -25,6 +26,7 @@ let guardrailConfig = loadGuardrailConfig(database);
 let toolConnections = loadToolConnections(database);
 const spiralDetector = createSpiralDetector(() => guardrailConfig);
 const guardrailEnforcer = createGuardrailEnforcer(() => guardrailConfig);
+const editAuthorizer = createEditAuthorizer(() => guardrailConfig);
 const cliEntryPath = resolve(
   fileURLToPath(new URL('../../cli/src/index.ts', import.meta.url)),
 );
@@ -154,6 +156,77 @@ const server = createServer(async (request, response) => {
         eventType: event.type,
         derivedEventTypes: processedEvents.slice(1).map((nextEvent) => nextEvent.type),
         processedEventTypes: processedEvents.map((nextEvent) => nextEvent.type),
+        session,
+      });
+      return;
+    }
+
+    if (request.method === 'POST' && pathName === '/enforcement/authorize-edit') {
+      const body = await readJsonBody<{
+        sessionId?: string;
+        tool?: ToolId;
+        model?: string | null;
+        filePaths?: unknown;
+      }>(request);
+
+      if (!body.sessionId || body.tool !== 'codex' || !Array.isArray(body.filePaths)) {
+        throw new Error('sessionId, tool=codex, and filePaths are required for edit authorization.');
+      }
+
+      const filePaths = body.filePaths.filter((filePath): filePath is string =>
+        typeof filePath === 'string' && filePath.trim().length > 0,
+      );
+
+      if (filePaths.length === 0) {
+        throw new Error('filePaths must contain at least one file path.');
+      }
+
+      const currentSession = sessionStateStore.getState();
+
+      if (currentSession.sessionId !== body.sessionId) {
+        processEventQueue([
+          {
+            type: 'session_start',
+            sessionId: body.sessionId,
+            tool: 'codex',
+            timestamp: Date.now(),
+            model: body.model ?? null,
+          },
+        ]);
+      }
+
+      const timestamp = Date.now();
+      const decision = editAuthorizer.authorize({
+        sessionId: body.sessionId,
+        tool: 'codex',
+        filePaths,
+        timestamp,
+      });
+      let session = sessionStateStore.getState();
+
+      if (decision.spiral) {
+        const result = processEventQueue([
+          {
+            type: 'spiral_start',
+            sessionId: body.sessionId,
+            tool: 'codex',
+            timestamp,
+            filePath: decision.spiral.filePath,
+            editCount: decision.spiral.editCount,
+            estimatedWasteUsd: null,
+          },
+        ]);
+        session = result.session;
+      }
+
+      logDaemon('enforcement', decision.allowed ? 'allowed Codex edit' : 'blocked Codex edit', {
+        sessionId: body.sessionId,
+        filePaths,
+        reason: decision.reason,
+      });
+      respondJson(response, 200, {
+        allowed: decision.allowed,
+        reason: decision.reason,
         session,
       });
       return;
@@ -300,6 +373,7 @@ function processEventQueue(initialEvents: SessionEvent[]): {
   for (let index = 0; index < eventQueue.length; index += 1) {
     const currentEvent = eventQueue[index];
     logDaemon('event', `processing ${summarizeEvent(currentEvent)}`);
+    editAuthorizer.processEvent(currentEvent);
     const detectorEvents = spiralDetector.processEvent(currentEvent);
 
     if (detectorEvents.length > 0) {
@@ -410,7 +484,7 @@ function createSpiralInterventionEvents(
 
   if (decision === 'stop') {
     events.push({
-      type: 'agent_stopped',
+      type: 'stop_requested',
       sessionId,
       tool,
       timestamp,
@@ -441,17 +515,8 @@ function createSessionStopEvents(
   const firstSpiral = activeSpirals[0] ?? null;
 
   return [
-    ...activeSpirals.map((spiral) => ({
-      type: 'spiral_stop' as const,
-      sessionId,
-      tool,
-      timestamp,
-      filePath: spiral.filePath,
-      reason: 'user_confirmed' as const,
-      costSavedUsd: spiral.estimatedWasteUsd ?? null,
-    })),
     {
-      type: 'agent_stopped' as const,
+      type: 'stop_requested' as const,
       sessionId,
       tool,
       timestamp,
@@ -487,6 +552,8 @@ function summarizeEvent(event: SessionEvent): string {
       return `context_pressure session=${event.sessionId} percent=${event.percent} used=${event.tokensUsed}/${event.tokensTotal}`;
     case 'agent_stopped':
       return `agent_stopped session=${event.sessionId} reason=${event.reason}${event.filePath ? ` file=${event.filePath}` : ''}`;
+    case 'stop_requested':
+      return `stop_requested session=${event.sessionId} reason=${event.reason}${event.filePath ? ` file=${event.filePath}` : ''}`;
     case 'burn_rate_update':
       return `burn_rate_update session=${event.sessionId} tokensPerMin=${event.tokensPerMin}`;
   }

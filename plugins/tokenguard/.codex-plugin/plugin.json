@@ -1,0 +1,21 @@
+{
+  "name": "tokenguard",
+  "version": "0.1.0+codex.20260720051315",
+  "description": "Prevents repeated Codex edits with live TokenGuard guardrails.",
+  "author": {
+    "name": "TokenGuard"
+  },
+  "interface": {
+    "displayName": "TokenGuard",
+    "shortDescription": "Block repeated Codex edits before they run.",
+    "longDescription": "TokenGuard checks Codex file patches against local spiral and budget guardrails before they are applied.",
+    "developerName": "TokenGuard",
+    "category": "Productivity",
+    "capabilities": [
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Explain why TokenGuard blocked my last edit."
+    ]
+  }
+}

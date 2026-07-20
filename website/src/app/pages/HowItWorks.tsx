@@ -1,6 +1,7 @@
 import { Link } from 'react-router';
 import { Activity, ArrowRight, Download, ShieldCheck, Waypoints } from 'lucide-react';
 import { Logo } from '../components/Logo';
+import { useAuth } from '../providers/AuthProvider';
 import './product-pages.css';
 
 const layers = [
@@ -75,6 +76,8 @@ export default function HowItWorks() {
 }
 
 export function SiteNav() {
+  const { user, logout } = useAuth();
+
   return (
     <nav className="site-nav">
       <div className="site-nav-inner">
@@ -84,7 +87,17 @@ export function SiteNav() {
           <Link to="/pricing">Pricing</Link>
           <Link to="/download">Download</Link>
         </div>
-        <Link to="/auth" className="site-nav-sign-in">Sign in <ArrowRight className="h-3.5 w-3.5" /></Link>
+        {user ? (
+          <button 
+            onClick={() => void logout()} 
+            className="site-nav-sign-in"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+          >
+            Sign out
+          </button>
+        ) : (
+          <Link to="/auth" className="site-nav-sign-in">Sign in <ArrowRight className="h-3.5 w-3.5" /></Link>
+        )}
       </div>
     </nav>
   );

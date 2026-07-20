@@ -4,7 +4,7 @@ import type {
   BudgetThresholdEvent,
   CurrentSessionState,
   SessionEvent,
-  SpiralStopEvent,
+  StopRequestedEvent,
 } from '../../shared/types.ts';
 
 const SESSION_WARN_PERCENT = 70;
@@ -33,14 +33,14 @@ export function createGuardrailEnforcer(getConfig: () => GuardrailConfig) {
       const derivedEvents: SessionEvent[] = [];
 
       if (event.type === 'spiral_start' && getConfig().autoStopSpirals && session.agentStatus !== 'stopped') {
-        const stopKey = `spiral-stop:${event.filePath}:${event.timestamp}`;
+        // The detector updates the same active spiral on every write. One
+        // request per file is enough; emitting one per edit would make the
+        // daemon's own event stream look like it was looping.
+        const stopKey = `spiral-stop:${event.filePath}`;
 
         if (!state.firedKeys.has(stopKey)) {
           state.firedKeys.add(stopKey);
-          derivedEvents.push(
-            createAgentStoppedEvent(event, 'auto_stopped'),
-            createSpiralStopEvent(event, 'auto_stopped'),
-          );
+          derivedEvents.push(createStopRequestedEvent(event, 'auto_stopped'));
         }
       }
 
@@ -82,7 +82,7 @@ export function createGuardrailEnforcer(getConfig: () => GuardrailConfig) {
         emitThresholdOnce(state, 'session-stop', () => {
           derivedEvents.push(
             createBudgetThresholdEvent(event, 'session', 'critical', percentUsed, 'stop'),
-            createAgentStoppedEvent(event, 'session_cap'),
+            createStopRequestedEvent(event, 'session_cap'),
           );
         });
         return;
@@ -126,7 +126,7 @@ export function createGuardrailEnforcer(getConfig: () => GuardrailConfig) {
         emitThresholdOnce(state, 'monthly-stop', () => {
           derivedEvents.push(
             createBudgetThresholdEvent(event, 'monthly', 'critical', percentUsed, 'stop'),
-            createAgentStoppedEvent(event, 'monthly_budget'),
+            createStopRequestedEvent(event, 'monthly_budget'),
           );
         });
         return;
@@ -185,31 +185,16 @@ function createBudgetThresholdEvent(
   };
 }
 
-function createAgentStoppedEvent(
+function createStopRequestedEvent(
   event: Extract<SessionEvent, { type: 'spiral_start' | 'token_count' }>,
-  reason: AgentStoppedEvent['reason'],
-): AgentStoppedEvent {
+  reason: StopRequestedEvent['reason'],
+): StopRequestedEvent {
   return {
-    type: 'agent_stopped',
+    type: 'stop_requested',
     sessionId: event.sessionId,
     tool: event.tool,
     timestamp: event.timestamp,
     reason,
     filePath: event.type === 'spiral_start' ? event.filePath : null,
-  };
-}
-
-function createSpiralStopEvent(
-  event: Extract<SessionEvent, { type: 'spiral_start' }>,
-  reason: SpiralStopEvent['reason'],
-): SpiralStopEvent {
-  return {
-    type: 'spiral_stop',
-    sessionId: event.sessionId,
-    tool: event.tool,
-    timestamp: event.timestamp,
-    filePath: event.filePath,
-    reason,
-    costSavedUsd: event.estimatedWasteUsd ?? null,
   };
 }

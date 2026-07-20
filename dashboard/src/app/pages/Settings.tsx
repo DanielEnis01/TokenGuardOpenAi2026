@@ -1,24 +1,63 @@
 import { AppShell } from '../components/AppShell';
 import { LogOut, CreditCard, User, Bell, Shield, Database } from 'lucide-react';
 import { useNavigate } from 'react-router';
+import { useState } from 'react';
 import { getWebsitePricingUrl } from '../lib/externalLinks';
+import { useAuth } from '../providers/AuthProvider';
 
 export default function Settings() {
   const navigate = useNavigate();
   const pricingUrl = getWebsitePricingUrl();
 
-  const handleLogout = () => {
-    navigate('/');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/auth');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
+  const toggleWindowsNotifications = async (enabled: boolean) => {
+    if (!enabled) {
+      setWindowsNotifications(false);
+      setNotificationMessage(null);
+      return;
+    }
+
+    if (typeof Notification === 'undefined') {
+      setNotificationMessage('Windows notifications are unavailable in this view.');
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+    const granted = permission === 'granted';
+    setWindowsNotifications(granted);
+    setNotificationMessage(granted ? null : 'Allow Windows notifications to enable alerts.');
+  };
+
+  const exportData = () => {
+    const payload = {
+      profileEmail,
+      notifications: { windowsNotifications, budgetWarnings, weeklyReports },
+      exportedAt: new Date().toISOString(),
+    };
+    const file = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const downloadUrl = URL.createObjectURL(file);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = 'tokenguard-settings.json';
+    link.click();
+    URL.revokeObjectURL(downloadUrl);
   };
 
   return (
     <AppShell>
       <div className="dashboard-page p-7" style={{ background: 'transparent' }}>
-        <div className="max-w-3xl">
+        <div className="mx-auto max-w-3xl">
           <div className="dashboard-page-header">
             <p className="dashboard-page-kicker">Workspace</p>
             <h2 className="dashboard-page-title">Settings</h2>
-            <p className="dashboard-page-description">Account preferences and local data controls.</p>
           </div>
 
           <Section title="Account">
@@ -27,35 +66,21 @@ export default function Settings() {
               label="Profile"
               description="demo@tokenguard.dev"
               action={
-                <button className="px-3 py-1.5 rounded-md transition-colors"
-                        style={{ 
-                          background: 'var(--bg-elevated)',
-                          border: '1px solid var(--border-default)',
-                          color: 'var(--text-primary)',
-                          font: 'var(--font-label)'
-                        }}>
-                  Edit
-                </button>
-              }
-            />
-            <SettingRow
-              icon={<CreditCard className="w-5 h-5" />}
-              label="Billing & Plans"
-              description="Free plan - upgrade opens the public pricing page"
-              action={
-                <a
-                  href={pricingUrl}
-                  className="px-3 py-1.5 rounded-xl transition-opacity hover:opacity-90"
-                  style={{ 
-                    background: 'var(--bg-elevated)',
-                    color: 'var(--text-primary)',
-                    border: '1px solid var(--border-default)',
-                    font: 'var(--font-label)',
-                    backdropFilter: 'var(--blur-elevated)',
-                    WebkitBackdropFilter: 'var(--blur-elevated)'
-                  }}>
-                  View Pricing
-                </a>
+                isEditingProfile ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      aria-label="Profile email"
+                      type="email"
+                      value={profileDraft}
+                      onChange={(event) => setProfileDraft(event.target.value)}
+                      className="w-44 rounded-md px-2 py-1.5"
+                      style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', font: 'var(--font-caption)' }}
+                    />
+                    <button type="button" onClick={() => { setProfileEmail(profileDraft); setIsEditingProfile(false); }} className="rounded-md px-3 py-1.5" style={{ background: 'var(--text-primary)', color: '#111', font: 'var(--font-label)' }}>Save</button>
+                  </div>
+                ) : (
+                  <button type="button" onClick={() => { setProfileDraft(profileEmail); setIsEditingProfile(true); }} className="rounded-md px-3 py-1.5" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', color: 'var(--text-primary)', font: 'var(--font-label)' }}>Edit</button>
+                )
               }
             />
           </Section>
@@ -63,21 +88,21 @@ export default function Settings() {
           <Section title="Notifications">
             <SettingRow
               icon={<Bell className="w-5 h-5" />}
-              label="Email Alerts"
-              description="Get notified when spirals are detected"
-              action={<Toggle checked={true} />}
+              label="Windows notifications"
+              description={notificationMessage ?? 'Spiral and stop alerts'}
+              action={<Toggle checked={windowsNotifications} onChange={toggleWindowsNotifications} label="Windows notifications" />}
             />
             <SettingRow
               icon={<Bell className="w-5 h-5" />}
               label="Budget Warnings"
               description="Alert when approaching budget limits"
-              action={<Toggle checked={true} />}
+              action={<Toggle checked={budgetWarnings} onChange={setBudgetWarnings} label="Budget warnings" />}
             />
             <SettingRow
               icon={<Bell className="w-5 h-5" />}
               label="Weekly Reports"
               description="Summary of token usage and savings"
-              action={<Toggle checked={false} />}
+              action={<Toggle checked={weeklyReports} onChange={setWeeklyReports} label="Weekly reports" />}
             />
           </Section>
 
@@ -97,13 +122,13 @@ export default function Settings() {
               label="Export Data"
               description="Download all your session history and settings"
               action={
-                <button className="px-3 py-1.5 rounded-md transition-colors"
-                        style={{ 
-                          background: 'var(--bg-elevated)',
-                          border: '1px solid var(--border-default)',
-                          color: 'var(--text-primary)',
-                          font: 'var(--font-label)'
-                        }}>
+                <button type="button" onClick={exportData} className="px-3 py-1.5 rounded-md transition-colors"
+                  style={{
+                    background: 'var(--bg-elevated)',
+                    border: '1px solid var(--border-default)',
+                    color: 'var(--text-primary)',
+                    font: 'var(--font-label)'
+                  }}>
                   Export
                 </button>
               }
@@ -116,10 +141,10 @@ export default function Settings() {
               label="Sign Out"
               description="Log out of your TokenGuard account"
               action={
-                <button 
+                <button
                   onClick={handleLogout}
                   className="px-3 py-1.5 rounded-md transition-colors hover:opacity-80"
-                  style={{ 
+                  style={{
                     background: 'transparent',
                     border: '1px solid var(--status-danger)',
                     color: 'var(--status-danger)',
@@ -140,7 +165,7 @@ export default function Settings() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div
-      className="mb-8 rounded-2xl px-5 py-5"
+      className="liquid-glass-card bento-card mb-8 rounded-2xl px-5 py-5"
       style={{
         background: 'var(--bg-card)',
         border: '1px solid var(--border-subtle)',
@@ -168,7 +193,7 @@ function SettingRow({ icon, label, description, action }: {
 }) {
   return (
     <div className="flex items-center justify-between py-4"
-         style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+      style={{ borderBottom: '1px solid var(--border-subtle)' }}>
       <div className="flex items-start gap-3 flex-1">
         <div className="mt-0.5" style={{ color: 'var(--text-secondary)' }}>
           {icon}
@@ -189,17 +214,18 @@ function SettingRow({ icon, label, description, action }: {
   );
 }
 
-function Toggle({ checked }: { checked: boolean }) {
+function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (checked: boolean) => void; label: string }) {
   return (
-    <div className="relative w-9 h-5 rounded-full transition-colors cursor-pointer"
-         style={{ 
-           background: checked ? 'var(--status-ok)' : 'var(--bg-elevated)',
-           border: checked ? 'none' : '1px solid var(--border-default)'
-         }}>
+    <button type="button" role="switch" aria-checked={checked} aria-label={label} onClick={() => onChange(!checked)} className="relative h-5 w-9 rounded-full transition-colors"
+      style={{
+        background: checked ? 'var(--status-ok)' : 'var(--bg-elevated)',
+        border: checked ? 'none' : '1px solid var(--border-default)',
+        cursor: 'pointer',
+      }}>
       <div className="absolute top-0.5 transition-transform w-4 h-4 bg-white rounded-full"
-           style={{ 
-             left: checked ? 'calc(100% - 18px)' : '2px'
-           }}></div>
-    </div>
+        style={{
+          left: checked ? 'calc(100% - 18px)' : '2px'
+        }} />
+    </button>
   );
 }

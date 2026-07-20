@@ -36,7 +36,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <div className="app-root dashboard-glass flex h-screen overflow-hidden" style={{ background: 'var(--bg-page)' }}>
+    <div className="app-root dashboard-glass dashboard-marble flex h-screen overflow-hidden" style={{ background: 'var(--bg-page)' }}>
       <aside
         className={`dashboard-sidebar relative z-10 flex shrink-0 flex-col overflow-hidden transition-[width] duration-300 ease-out ${
           isSidebarExpanded ? 'is-expanded w-[220px]' : 'w-14'
@@ -92,31 +92,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
-
-        <div className="min-w-[220px] px-3 pb-4">
-          <a
-            href={pricingUrl}
-            className="sidebar-plan flex items-center gap-3 rounded-lg px-3 py-2.5"
-            style={{
-              background: 'var(--bg-elevated)',
-              border: '1px solid var(--border-subtle)',
-              color: 'var(--text-primary)',
-              font: 'var(--font-caption)',
-              backdropFilter: 'var(--blur-elevated)',
-              WebkitBackdropFilter: 'var(--blur-elevated)',
-            }}
-          >
-            <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full" style={{ background: 'var(--accent)', color: '#0b0b0d' }}>
-              <span className="h-1.5 w-1.5 rounded-full" style={{ background: 'currentColor' }} />
-            </span>
-            <span className="sidebar-copy whitespace-nowrap">Free plan</span>
-          </a>
-        </div>
       </aside>
 
       <div className="dashboard-content flex min-w-0 flex-1 flex-col overflow-hidden">
         <div className="flex-1 overflow-y-auto overflow-x-hidden">
-          <div className="mx-auto w-full max-w-[1120px] px-4 py-4 sm:px-5 sm:py-5 lg:px-6 lg:py-6">
+          <div className="mx-auto w-full max-w-[1360px] px-4 py-4 sm:px-5 sm:py-5 lg:px-6 lg:py-6">
             {children}
           </div>
         </div>
@@ -130,7 +110,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           }}
         >
           <div
-            className="mx-auto flex w-full max-w-[1080px] flex-wrap items-center gap-x-3 gap-y-1"
+            className="mx-auto flex w-full max-w-[1320px] flex-wrap items-center gap-x-3 gap-y-1"
             style={{ font: 'var(--font-caption)', color: 'var(--text-secondary)' }}
           >
             <span className="inline-flex items-center gap-2">
