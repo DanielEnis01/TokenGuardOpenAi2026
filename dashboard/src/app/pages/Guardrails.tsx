@@ -21,7 +21,6 @@ export default function Guardrails() {
           <div className="dashboard-page-header">
             <p className="dashboard-page-kicker">Protection rules</p>
             <h2 className="dashboard-page-title">Guardrails</h2>
-            <p className="dashboard-page-description">Set the limits TokenGuard enforces during a coding session.</p>
             <p className="mt-2" style={{ font: 'var(--font-caption)', color: 'var(--text-muted)' }}>
               {isUsingMockData
                 ? 'daemon offline - editing mock fallback config'
@@ -179,7 +178,7 @@ export default function Guardrails() {
           </div>
 
           <div
-            className="rounded-xl p-6"
+            className="liquid-glass-card bento-card rounded-xl p-6"
             style={{
               background: config.promptRateLimitEnabled ? 'var(--bg-card)' : 'var(--bg-elevated)',
               border: '1px solid var(--border-subtle)',
@@ -234,7 +233,7 @@ export default function Guardrails() {
           </div>
 
           <div
-            className="mt-8 flex items-center justify-between rounded-lg p-5"
+            className="liquid-glass-card bento-card mt-8 flex items-center justify-between rounded-lg p-5"
             style={{
               background: 'var(--bg-elevated)',
               border: '1px solid var(--border-subtle)',
@@ -278,7 +277,7 @@ function GuardrailCard({
 }) {
   return (
     <div
-      className="flex min-h-[360px] flex-col rounded-xl p-6"
+      className="liquid-glass-card bento-card flex min-h-[360px] flex-col rounded-xl p-6"
       style={{
         background: 'var(--bg-card)',
         border: '1px solid var(--border-subtle)',
@@ -419,7 +418,7 @@ function ActionToggle({
 }) {
   return (
     <div
-      className="flex items-center justify-between rounded-lg p-4"
+      className="liquid-glass-inset flex items-center justify-between rounded-lg p-4"
       style={{
         background: 'var(--bg-elevated)',
         border: '1px solid var(--border-subtle)',

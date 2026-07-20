@@ -7,12 +7,12 @@
   --font-family-mono: 'JetBrains Mono', monospace;
   --font-family-accent: 'Space Grotesk', sans-serif;
 
-  --bg-page: #09090b;
-  --bg-panel: rgba(14, 14, 17, 0.9);
-  --bg-rail: rgba(12, 12, 15, 0.93);
-  --bg-card: rgba(18, 18, 22, 0.9);
-  --bg-elevated: rgba(28, 28, 33, 0.88);
-  --bg-overlay: rgba(10, 10, 12, 0.82);
+  --bg-page: #080808;
+  --bg-panel: rgba(14, 14, 14, 0.74);
+  --bg-rail: rgba(9, 9, 9, 0.76);
+  --bg-card: rgba(18, 18, 18, 0.60);
+  --bg-elevated: rgba(34, 34, 34, 0.56);
+  --bg-overlay: rgba(10, 10, 10, 0.86);
 
   --blur-panel: blur(12px) saturate(112%);
   --blur-card: blur(10px) saturate(110%);
@@ -23,17 +23,17 @@
   --border-default: rgba(255, 255, 255, 0.15);
   --border-strong: rgba(255, 255, 255, 0.22);
 
-  --text-primary: #e8e8f0;
-  --text-secondary: #8e8ea8;
-  --text-muted: #52526a;
-  --text-disabled: #33334a;
+  --text-primary: #f4f4f4;
+  --text-secondary: #bababa;
+  --text-muted: #858585;
+  --text-disabled: #4d4d4d;
 
-  --status-danger: #e05555;
-  --status-warn: #d4874a;
-  --status-ok: #3dad78;
-  --status-info: #4a8fd4;
+  --status-danger: #f0f0f0;
+  --status-warn: #d0d0d0;
+  --status-ok: #ffffff;
+  --status-info: #bdbdbd;
 
-  --accent: #c6cad7;
+  --accent: #ffffff;
 
   --font-display: 600 42px/1 var(--font-family-display);
   --font-heading: 500 15px/1.4 var(--font-family-sans);
@@ -118,7 +118,7 @@
     z-index: 0;
     pointer-events: none;
     background:
-      radial-gradient(ellipse 72% 55% at 12% 0%, rgba(190, 198, 225, 0.055) 0%, transparent 64%),
+      radial-gradient(ellipse 72% 55% at 12% 0%, rgba(255, 255, 255, 0.055) 0%, transparent 64%),
       linear-gradient(180deg, rgba(255, 255, 255, 0.012), transparent 28%);
   }
 
@@ -214,6 +214,227 @@
     z-index: 1;
   }
 
+  .dashboard-marble::after {
+    content: '';
+    position: absolute;
+    inset: -20%;
+    z-index: -2;
+    pointer-events: none;
+    opacity: 0.92;
+    background:
+      radial-gradient(ellipse 46% 22% at 12% 34%, rgba(255, 255, 255, 0.30), transparent 68%),
+      radial-gradient(ellipse 40% 30% at 73% 18%, rgba(255, 255, 255, 0.20), transparent 72%),
+      radial-gradient(ellipse 38% 28% at 66% 80%, rgba(255, 255, 255, 0.13), transparent 70%),
+      repeating-linear-gradient(124deg, transparent 0 70px, rgba(255, 255, 255, 0.055) 75px 80px, transparent 86px 162px),
+      linear-gradient(130deg, #070707 0%, #191919 35%, #080808 65%, #252525 100%);
+    filter: blur(10px) contrast(1.16);
+    animation: marble-drift 24s ease-in-out infinite alternate;
+  }
+
+  .liquid-glass-card {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.125), rgba(255, 255, 255, 0.045) 24%, rgba(0, 0, 0, 0.40) 74%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    box-shadow:
+      inset 1px 1px 0 rgba(255, 255, 255, 0.22),
+      inset -1px -1px 0 rgba(255, 255, 255, 0.04),
+      0 20px 45px rgba(0, 0, 0, 0.32);
+    backdrop-filter: blur(22px) saturate(0%);
+    -webkit-backdrop-filter: blur(22px) saturate(0%);
+    transition: transform 280ms cubic-bezier(.2,.8,.2,1), border-color 220ms ease, box-shadow 280ms ease, background 280ms ease;
+    transform-style: preserve-3d;
+    will-change: transform;
+  }
+
+  .liquid-glass-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(118deg, rgba(255, 255, 255, 0.16), transparent 25%, transparent 72%, rgba(255, 255, 255, 0.05));
+  }
+
+  .liquid-glass-card:hover {
+    border-color: rgba(255, 255, 255, 0.30) !important;
+  }
+
+  .bento-card:hover {
+    /* Translate only: scale can rasterize text during hover and make the
+       telemetry inside a card look soft. */
+    transform: translateY(-5px);
+    box-shadow:
+      inset 1px 1px 0 rgba(255, 255, 255, 0.28),
+      inset -1px -1px 0 rgba(255, 255, 255, 0.05),
+      0 28px 54px rgba(0, 0, 0, 0.48),
+      0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+  }
+
+  .liquid-glass-inset {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.075), rgba(0, 0, 0, 0.42)) !important;
+    border: 1px solid rgba(255, 255, 255, 0.13) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09), inset 0 0 24px rgba(0, 0, 0, 0.18);
+    backdrop-filter: blur(14px) saturate(0%);
+    -webkit-backdrop-filter: blur(14px) saturate(0%);
+  }
+
+  /* The dashboard originally used inline neutral fills. Treat every remaining
+     dashboard surface that still uses those fills as a glass layer so no route
+     falls back to the old flat-card treatment. Buttons and controls are
+     deliberately excluded: they stay compact and legible above the glass. */
+  .dashboard-page :is(div, section, article)[style*="--bg-card"],
+  .dashboard-page :is(div, section, article)[style*="--bg-elevated"] {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.035) 26%, rgba(0, 0, 0, 0.34) 76%) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.11), inset -1px -1px 0 rgba(0, 0, 0, 0.24);
+    backdrop-filter: blur(16px) saturate(0%);
+    -webkit-backdrop-filter: blur(16px) saturate(0%);
+  }
+
+  .dashboard-page .liquid-glass-inset {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.075), rgba(0, 0, 0, 0.42)) !important;
+    border-color: rgba(255, 255, 255, 0.13) !important;
+  }
+
+  .smooth-tabs {
+    padding: 0.22rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.28);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  }
+
+  .smooth-tabs .smooth-tab {
+    position: relative;
+    z-index: 0;
+    border-color: transparent !important;
+    color: var(--text-muted) !important;
+    transition: color 220ms ease, transform 220ms ease, background 260ms cubic-bezier(.2,.8,.2,1), box-shadow 260ms ease;
+  }
+
+  .smooth-tabs .smooth-tab:hover { color: var(--text-primary) !important; }
+
+  .smooth-tabs .smooth-tab.is-active {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.20), rgba(255, 255, 255, 0.075)) !important;
+    color: var(--text-primary) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 4px 12px rgba(0, 0, 0, 0.24);
+  }
+
+  .monitor-bento-grid > .liquid-session,
+  .monitor-bento-grid > .connector-panel {
+    min-height: 100%;
+  }
+
+  .connector-panel {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .connector-spend {
+    background: rgba(0, 0, 0, 0.34);
+    border: 1px solid rgba(255, 255, 255, 0.11);
+  }
+
+  .dynamic-status-text {
+    display: flex;
+    min-height: 1.5rem;
+    align-items: center;
+    gap: 0.55rem;
+    overflow: hidden;
+    color: var(--text-secondary);
+    font: var(--font-data);
+  }
+
+  .dynamic-status-dot {
+    width: 0.42rem;
+    height: 0.42rem;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: var(--text-primary);
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.55);
+    animation: status-breathe 1.8s ease-in-out infinite;
+  }
+
+  .dynamic-status-copy {
+    animation: status-rise 320ms ease both;
+  }
+
+  .embedded-terminal {
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 0.5rem;
+    background: rgba(0, 0, 0, 0.72);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  }
+
+  .embedded-terminal-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: 2rem;
+    padding: 0 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+    color: var(--text-muted);
+    font: var(--font-data);
+  }
+
+  .terminal-lights { display: inline-flex; gap: 0.28rem; }
+  .terminal-lights i { width: 0.42rem; height: 0.42rem; border-radius: 999px; background: #8f8f8f; }
+  .terminal-lights i:nth-child(2) { background: #b8b8b8; }
+  .terminal-lights i:nth-child(3) { background: #e7e7e7; }
+
+  .embedded-terminal-body {
+    min-height: 7.1rem;
+    padding: 0.7rem 0.8rem;
+  }
+
+  .terminal-line {
+    margin: 0;
+    animation: terminal-enter 220ms ease both;
+    color: var(--text-secondary);
+    font: var(--font-data);
+  }
+
+  .terminal-line + .terminal-line { margin-top: 0.32rem; }
+  .terminal-line.is-success { color: var(--text-primary); }
+  .terminal-line.is-danger { color: var(--text-primary); text-decoration: underline; }
+
+  .terminal-cursor {
+    display: inline-block;
+    width: 0.42rem;
+    height: 0.85rem;
+    margin-top: 0.35rem;
+    vertical-align: middle;
+    background: var(--text-primary);
+    animation: cursor-blink 0.9s steps(2, start) infinite;
+  }
+
+  @keyframes marble-drift {
+    from { transform: translate3d(-1.5%, -1%, 0) scale(1.02) rotate(-1deg); }
+    to { transform: translate3d(1.5%, 1%, 0) scale(1.06) rotate(1deg); }
+  }
+
+  @keyframes status-breathe {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.45); }
+    50% { box-shadow: 0 0 0 0.35rem rgba(255, 255, 255, 0); }
+  }
+
+  @keyframes status-rise {
+    from { opacity: 0; transform: translateY(0.6rem); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes terminal-enter {
+    from { opacity: 0; transform: translateX(-0.35rem); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes cursor-blink { 50% { opacity: 0; } }
+
   .dashboard-sidebar {
     box-shadow: 8px 0 28px rgba(0, 0, 0, 0.12), inset -1px 0 0 rgba(255, 255, 255, 0.025);
   }
@@ -226,7 +447,7 @@
     bottom: 0;
     width: 1px;
     pointer-events: none;
-    background: linear-gradient(to bottom, transparent, rgba(225, 231, 255, 0.26), transparent);
+    background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.26), transparent);
   }
 
   .sidebar-copy {
@@ -260,20 +481,20 @@
     transform: none;
   }
 
-  .monitor-page > section:not(.grid),
-  .monitor-page article {
+  .monitor-page > section:not(.grid):not(.bento-card),
+  .monitor-page article:not(.bento-card) {
     position: relative;
     overflow: visible;
     box-shadow: none;
     transition: border-color 180ms ease, background-color 180ms ease;
   }
 
-  .monitor-page > section:not(.grid)::before,
-  .monitor-page article::before {
+  .monitor-page > section:not(.grid):not(.bento-card)::before,
+  .monitor-page article:not(.bento-card)::before {
     content: none;
   }
 
-  .monitor-page article:hover {
+  .monitor-page article:not(.bento-card):hover {
     border-color: var(--border-default) !important;
     box-shadow: none;
     transform: none;
@@ -282,15 +503,15 @@
   .liquid-heading {
     font: 600 clamp(2rem, 3vw, 2.8rem) / 1.02 var(--font-family-display);
     letter-spacing: -0.035em;
-    background: linear-gradient(180deg, #ffffff 0%, #dfe2ee 58%, #a9afbf 100%);
+    background: linear-gradient(180deg, #ffffff 0%, #d6d6d6 58%, #969696 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    filter: drop-shadow(0 6px 22px rgba(232, 237, 255, 0.13));
+    filter: drop-shadow(0 6px 22px rgba(255, 255, 255, 0.13));
   }
 
   .liquid-eyebrow {
-    color: #aeb8d0 !important;
+    color: #b7b7b7 !important;
     font-family: var(--font-family-accent) !important;
     font-size: 10px !important;
     font-weight: 600 !important;
@@ -371,8 +592,13 @@
 
     .sidebar-copy,
     .sidebar-nav-item,
-    .sidebar-plan {
+    .sidebar-plan,
+    .liquid-glass-card {
       transition: none;
+    }
+
+    .bento-card:hover {
+      transform: none;
     }
   }
 }

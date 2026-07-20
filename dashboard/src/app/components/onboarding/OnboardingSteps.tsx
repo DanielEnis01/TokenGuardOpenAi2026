@@ -104,7 +104,7 @@ export function OnboardingSteps({ onComplete }: { onComplete?: () => void }) {
           }}
           className="flex h-11 items-center justify-center gap-2 rounded-full px-5 transition-opacity hover:opacity-90"
           style={{ 
-            background: '#020617',
+            background: '#111111',
             color: 'white',
             font: '600 14px/1 var(--font-family-sans)',
             border: 'none',

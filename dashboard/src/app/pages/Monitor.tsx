@@ -112,7 +112,6 @@ export default function Monitor() {
           <div>
             <p className="dashboard-page-kicker">Live monitor</p>
             <h1 className="dashboard-page-title">Session telemetry</h1>
-            <p className="dashboard-page-description">Cost, context, and loop signals from the current coding session.</p>
           </div>
           <div
             className="liquid-status inline-flex w-fit items-center gap-2 rounded-full px-3 py-2"
@@ -145,13 +144,18 @@ export default function Monitor() {
           </div>
         </header>
 
-        <LiveSessionPanel
-          session={currentSession}
-          connectionStatus={connectionStatus}
-          isUsingMockData={isUsingMockData}
-          primaryActiveSpiral={primaryActiveSpiral}
-          onStopAgent={() => void stopSession()}
-        />
+        <section className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.65fr)_minmax(290px,0.65fr)]">
+          <LiveSessionPanel
+            session={currentSession}
+            connectionStatus={connectionStatus}
+            isUsingMockData={isUsingMockData}
+            primaryActiveSpiral={primaryActiveSpiral}
+          />
+          <SessionActionsPanel
+            session={currentSession}
+            onStopAgent={() => void stopSession()}
+          />
+        </section>
 
         {currentSession.agentStatus === 'stopped' ? (
           <InterventionBanner
@@ -203,29 +207,27 @@ export default function Monitor() {
           />
         </section>
 
-        <section
-          className="rounded-[20px] p-4 sm:p-5"
-          style={{
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border-subtle)',
-            backdropFilter: 'var(--blur-card)',
-            WebkitBackdropFilter: 'var(--blur-card)',
-          }}
-        >
+        <section className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.75fr)_minmax(290px,0.85fr)]">
+          <div
+            className="liquid-glass-card bento-card rounded-[20px] p-4 sm:p-5"
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-subtle)',
+              backdropFilter: 'var(--blur-card)',
+              WebkitBackdropFilter: 'var(--blur-card)',
+            }}
+          >
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 style={{ font: 'var(--font-heading)' }}>Burn Rate</h2>
-              <p style={{ font: 'var(--font-caption)', color: 'var(--text-muted)' }}>
-                Actual burn versus expected linear rate
-              </p>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="smooth-tabs flex flex-wrap gap-1">
               {chartRanges.map((range) => (
                 <button
                   key={range}
                   type="button"
                   onClick={() => setSelectedRange(range)}
-                  className="rounded-full px-3 py-1.5 transition-colors"
+                  className={`smooth-tab rounded-full px-3 py-1.5 ${selectedRange === range ? 'is-active' : ''}`}
                   style={{
                     background: selectedRange === range ? 'var(--bg-elevated)' : 'transparent',
                     border: '1px solid var(--border-subtle)',
@@ -240,7 +242,7 @@ export default function Monitor() {
           </div>
 
           <div
-            className="h-[320px] rounded-[16px] p-3"
+            className="liquid-glass-inset h-[320px] rounded-[16px] p-3"
             style={{
               background: 'rgba(8, 8, 8, 0.36)',
               border: '1px solid var(--border-subtle)',
@@ -301,11 +303,13 @@ export default function Monitor() {
               />
             )}
           </div>
+          </div>
+          <ActivityPanel hasTimelineEvents={hasTimelineEvents} />
         </section>
 
         <section className="grid grid-cols-1 gap-5 xl:grid-cols-[1.35fr_0.85fr]">
           <div
-            className="rounded-[20px] p-4 sm:p-5"
+            className="liquid-glass-card bento-card rounded-[20px] p-4 sm:p-5"
             style={{
               background: 'var(--bg-card)',
               border: '1px solid var(--border-subtle)',
@@ -316,16 +320,13 @@ export default function Monitor() {
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
                 <h2 style={{ font: 'var(--font-heading)' }}>Loop Detector</h2>
-                <p style={{ font: 'var(--font-caption)', color: 'var(--text-muted)' }}>
-                  Active spirals first, resolved rows after
-                </p>
               </div>
               <Link to="/history" style={{ font: 'var(--font-caption)', color: 'var(--text-primary)' }}>
                 Open history {'->'}
               </Link>
             </div>
 
-            <div className="overflow-hidden rounded-[16px]" style={{ border: '1px solid var(--border-subtle)' }}>
+            <div className="liquid-glass-inset overflow-hidden rounded-[16px]" style={{ border: '1px solid var(--border-subtle)' }}>
               <div
                 className="hidden grid-cols-[40px_minmax(0,1.6fr)_80px_110px_110px_88px] gap-3 px-4 py-3 md:grid"
                 style={{ background: 'var(--bg-elevated)', font: 'var(--font-caption)', color: 'var(--text-muted)' }}
@@ -406,7 +407,7 @@ export default function Monitor() {
           </div>
 
           <div
-            className="rounded-[20px] p-4 sm:p-5"
+            className="liquid-glass-card bento-card rounded-[20px] p-4 sm:p-5"
             style={{
               background: 'var(--bg-card)',
               border: '1px solid var(--border-subtle)',
@@ -416,9 +417,6 @@ export default function Monitor() {
           >
             <div className="mb-4">
               <h2 style={{ font: 'var(--font-heading)' }}>Budget Bars</h2>
-              <p style={{ font: 'var(--font-caption)', color: 'var(--text-muted)' }}>
-                Live caps with inline edit affordances
-              </p>
             </div>
 
             <div className="space-y-5">
@@ -438,56 +436,6 @@ export default function Monitor() {
           </div>
         </section>
 
-        <section
-          className="rounded-[20px] p-4 sm:p-5"
-          style={{
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border-subtle)',
-            backdropFilter: 'var(--blur-card)',
-            WebkitBackdropFilter: 'var(--blur-card)',
-          }}
-        >
-          <div className="mb-4">
-            <h2 style={{ font: 'var(--font-heading)' }}>Session Timeline</h2>
-            <p style={{ font: 'var(--font-caption)', color: 'var(--text-muted)' }}>
-              Last 30 minutes of session events
-            </p>
-          </div>
-
-          <div className="overflow-x-auto pb-2">
-            {hasTimelineEvents ? (
-              <div className="flex min-w-max gap-4">
-                {timelineEvents.map((event) => (
-                  <div
-                    key={`${event.time}-${event.label}`}
-                    className="w-[180px] rounded-2xl p-4"
-                    style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span style={{ font: 'var(--font-caption)', color: 'var(--text-muted)' }}>{event.time}</span>
-                      <TimelineIcon type={event.icon} />
-                    </div>
-                    <p className="mt-3" style={{ font: 'var(--font-label)', color: 'var(--text-primary)' }}>
-                      {event.label}
-                    </p>
-                    <p className="mt-2" style={{ font: 'var(--font-caption)', color: 'var(--text-secondary)' }}>
-                      {event.detail}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-[16px] p-6 text-center" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}>
-                <p style={{ font: 'var(--font-label)', color: 'var(--text-primary)' }}>
-                  No timeline events yet
-                </p>
-                <p className="mt-2" style={{ font: 'var(--font-caption)', color: 'var(--text-muted)' }}>
-                  Session start, spiral catches, and stop events will accumulate here once the daemon receives them.
-                </p>
-              </div>
-            )}
-          </div>
-        </section>
       </div>
     </AppShell>
   );
@@ -498,13 +446,11 @@ function LiveSessionPanel({
   connectionStatus,
   isUsingMockData,
   primaryActiveSpiral,
-  onStopAgent,
 }: {
   session: ReturnType<typeof useDaemonState>['session'];
   connectionStatus: ReturnType<typeof useDaemonState>['connectionStatus'];
   isUsingMockData: boolean;
   primaryActiveSpiral: ReturnType<typeof useDaemonState>['session']['activeSpirals'][number] | null;
-  onStopAgent: () => void;
 }) {
   const hasActiveSession = Boolean(session.sessionId);
   const isStopped = session.agentStatus === 'stopped';
@@ -532,7 +478,7 @@ function LiveSessionPanel({
 
   return (
     <section
-      className="liquid-session rounded-[22px] p-5 sm:p-6"
+      className="liquid-session liquid-glass-card bento-card rounded-[12px] p-5 sm:p-6"
       style={{
         background: 'var(--bg-card)',
         border: '1px solid var(--border-subtle)',
@@ -540,8 +486,7 @@ function LiveSessionPanel({
         WebkitBackdropFilter: 'var(--blur-card)',
       }}
     >
-      <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-        <div className="flex-1 space-y-4">
+      <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
             <span
               className="inline-flex items-center gap-2 rounded-full px-3 py-1.5"
@@ -587,7 +532,7 @@ function LiveSessionPanel({
           </div>
 
           <div
-            className="rounded-[18px] px-4 py-3"
+            className="liquid-glass-inset rounded-[18px] px-4 py-3"
             style={{
               background: 'var(--bg-elevated)',
               border: '1px solid var(--border-subtle)',
@@ -602,55 +547,96 @@ function LiveSessionPanel({
                   : 'No session is live yet'}
             </p>
           </div>
-        </div>
-
-        <div
-          className="w-full rounded-[18px] p-4 xl:w-[280px]"
-          style={{
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--border-subtle)',
-          }}
-        >
-          <div className="grid grid-cols-2 gap-3">
-            <QuickStat label="Tokens" value={formatInteger(session.totalTokens)} />
-            <QuickStat label="Cost" value={`$${session.sessionCostUsd.toFixed(2)}`} />
-            <QuickStat label="Burn" value={`${formatInteger(session.burnRatePerMin)}/m`} />
-            <QuickStat label="Context" value={`${session.contextPercent}%`} />
-          </div>
-
-          <div className="mt-4 flex flex-col gap-2">
-            <button
-              type="button"
-              onClick={onStopAgent}
-              disabled={!hasActiveSession || isStopped}
-              className="rounded-xl px-4 py-2.5 transition-opacity"
-              style={{
-                background: hasActiveSession && !isStopped ? 'rgba(224, 85, 85, 0.14)' : 'var(--bg-card)',
-                border: '1px solid var(--border-subtle)',
-                color: hasActiveSession && !isStopped ? 'var(--status-danger)' : 'var(--text-muted)',
-                font: 'var(--font-label)',
-                opacity: hasActiveSession && !isStopped ? 1 : 0.65,
-                cursor: hasActiveSession && !isStopped ? 'pointer' : 'not-allowed',
-              }}
-            >
-              {isStopped ? 'Agent stopped' : 'Stop agent'}
-            </button>
-            <Link
-              to="/guardrails"
-              className="rounded-xl px-4 py-2.5 text-center"
-              style={{
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border-subtle)',
-                color: 'var(--text-primary)',
-                font: 'var(--font-label)',
-              }}
-            >
-              Review guardrails
-            </Link>
-          </div>
-        </div>
       </div>
     </section>
+  );
+}
+
+function SessionActionsPanel({
+  session,
+  onStopAgent,
+}: {
+  session: ReturnType<typeof useDaemonState>['session'];
+  onStopAgent: () => void;
+}) {
+  const hasActiveSession = Boolean(session.sessionId);
+  const isStopped = session.agentStatus === 'stopped';
+
+  return (
+    <aside className="liquid-glass-card bento-card flex flex-col rounded-[12px] p-5 sm:p-6">
+      <p className="dashboard-page-kicker">Session controls</p>
+      <div className="mt-2 grid grid-cols-2 gap-4">
+        <QuickStat label="Tokens" value={formatInteger(session.totalTokens)} />
+        <QuickStat label="Cost" value={`$${session.sessionCostUsd.toFixed(2)}`} />
+        <QuickStat label="Burn" value={`${formatInteger(session.burnRatePerMin)}/m`} />
+        <QuickStat label="Context" value={`${session.contextPercent}%`} />
+      </div>
+      <div className="liquid-glass-inset mt-5 flex flex-1 flex-col justify-end rounded-[12px] p-3">
+        <button
+          type="button"
+          onClick={onStopAgent}
+          disabled={!hasActiveSession || isStopped}
+          className="rounded-xl px-4 py-3 transition-opacity"
+          style={{
+            background: hasActiveSession && !isStopped ? 'rgba(255,255,255,0.12)' : 'var(--bg-card)',
+            border: '1px solid var(--border-subtle)',
+            color: hasActiveSession && !isStopped ? 'var(--text-primary)' : 'var(--text-muted)',
+            font: 'var(--font-label)',
+            opacity: hasActiveSession && !isStopped ? 1 : 0.65,
+            cursor: hasActiveSession && !isStopped ? 'pointer' : 'not-allowed',
+          }}
+        >
+          {isStopped ? 'Agent stopped' : 'Stop agent'}
+        </button>
+        <Link
+          to="/guardrails"
+          className="mt-2 rounded-xl px-4 py-3 text-center"
+          style={{
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-subtle)',
+            color: 'var(--text-primary)',
+            font: 'var(--font-label)',
+          }}
+        >
+          Review guardrails
+        </Link>
+      </div>
+    </aside>
+  );
+}
+
+function ActivityPanel({ hasTimelineEvents }: { hasTimelineEvents: boolean }) {
+  return (
+    <aside
+      className="liquid-glass-card bento-card rounded-[20px] p-4 sm:p-5"
+      style={{
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border-subtle)',
+        backdropFilter: 'var(--blur-card)',
+        WebkitBackdropFilter: 'var(--blur-card)',
+      }}
+    >
+      <h2 style={{ font: 'var(--font-heading)' }}>Recent activity</h2>
+      {hasTimelineEvents ? (
+        <ol className="mt-4 space-y-4">
+          {timelineEvents.map((event) => (
+            <li key={`${event.time}-${event.label}`} className="flex items-start gap-3">
+              <span className="liquid-glass-inset mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg">
+                <TimelineIcon type={event.icon} />
+              </span>
+              <div className="min-w-0">
+                <p style={{ font: 'var(--font-label)', color: 'var(--text-primary)' }}>{event.label}</p>
+                <p className="mt-1 font-mono" style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{event.time}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <div className="liquid-glass-inset mt-4 rounded-[12px] px-4 py-6 text-center">
+          <p style={{ font: 'var(--font-label)', color: 'var(--text-primary)' }}>No activity yet</p>
+        </div>
+      )}
+    </aside>
   );
 }
 
@@ -665,7 +651,7 @@ function SessionField({
 }) {
   return (
     <div
-      className="rounded-[18px] px-4 py-3"
+      className="liquid-glass-inset rounded-[18px] px-4 py-3"
       style={{
         background: 'var(--bg-elevated)',
         border: '1px solid var(--border-subtle)',
@@ -813,7 +799,7 @@ function MetricCard({
 
   return (
     <article
-      className="rounded-[18px] p-4"
+      className="liquid-glass-card bento-card rounded-[18px] p-4"
       style={{
         background: 'var(--bg-card)',
         border: '1px solid var(--border-subtle)',

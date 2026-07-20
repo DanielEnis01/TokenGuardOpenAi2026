@@ -9,6 +9,8 @@ const DEFAULT_CODEX_HOME = join(homedir(), '.codex');
 const DEFAULT_POLL_INTERVAL_MS = 2_000;
 const EXISTING_SESSION_GRACE_MS = 60_000;
 const STALE_SESSION_MS = 15 * 60_000;
+const RECENT_SESSION_FILE_GRACE_MS = 10_000;
+const MISSING_SESSION_RETRY_MS = 5 * 60_000;
 
 interface CodexWatcherOptions {
   onEvents: (events: SessionEvent[]) => void;
@@ -57,6 +59,7 @@ export function createCodexWatcher({
   let initialized = false;
   const trackedSessions = new Map<string, TrackedCodexSession>();
   const sessionFileCache = new Map<string, string>();
+  const missingSessionRetryAfter = new Map<string, number>();
   const activeSessionByCwd = new Map<string, string>();
 
   return {
@@ -90,6 +93,7 @@ export function createCodexWatcher({
       }
 
       trackedSessions.clear();
+      missingSessionRetryAfter.clear();
       activeSessionByCwd.clear();
       initialized = false;
     },
@@ -151,12 +155,33 @@ export function createCodexWatcher({
         continue;
       }
 
-      const trackedSession = await createTrackedSession(sessionEntry);
-
-      if (!trackedSession) {
+      const retryAfter = missingSessionRetryAfter.get(sessionEntry.id);
+      if (retryAfter && retryAfter > Date.now()) {
         continue;
       }
 
+      const trackedSession = await createTrackedSession(sessionEntry);
+
+      if (!trackedSession) {
+        const now = Date.now();
+        const ageMs = sessionEntry.updatedAt === null ? Number.POSITIVE_INFINITY : now - sessionEntry.updatedAt;
+        const isRecentSession = ageMs >= 0 && ageMs < RECENT_SESSION_FILE_GRACE_MS;
+        const wasAlreadyMissing = missingSessionRetryAfter.has(sessionEntry.id);
+
+        missingSessionRetryAfter.set(
+          sessionEntry.id,
+          now + (isRecentSession ? DEFAULT_POLL_INTERVAL_MS : MISSING_SESSION_RETRY_MS),
+        );
+
+        if (!isRecentSession && !wasAlreadyMissing) {
+          log('codex', 'skipping stale codex session with no transcript file', {
+            sessionId: sessionEntry.id,
+          });
+        }
+        continue;
+      }
+
+      missingSessionRetryAfter.delete(sessionEntry.id);
       trackedSessions.set(sessionEntry.id, trackedSession);
 
       if (!asBaseline) {
@@ -171,9 +196,6 @@ export function createCodexWatcher({
     const filePath = await findSessionFileById(sessionEntry.id);
 
     if (!filePath) {
-      log('codex', 'session file not found for codex session', {
-        sessionId: sessionEntry.id,
-      });
       return null;
     }
 
@@ -202,36 +224,62 @@ export function createCodexWatcher({
   }
 
   async function processTrackedSessions(): Promise<void> {
-    for (const trackedSession of trackedSessions.values()) {
-      const fileContents = await readFile(trackedSession.filePath, 'utf8');
-      const lines = splitJsonLines(fileContents);
-      const transcriptStats = await stat(trackedSession.filePath);
-      trackedSession.lastObservedAt = Math.max(trackedSession.lastObservedAt, Math.floor(transcriptStats.mtimeMs));
+    for (const trackedSession of [...trackedSessions.values()]) {
+      try {
+        const fileContents = await readFile(trackedSession.filePath, 'utf8');
+        const lines = splitJsonLines(fileContents);
+        const transcriptStats = await stat(trackedSession.filePath);
+        trackedSession.lastObservedAt = Math.max(trackedSession.lastObservedAt, Math.floor(transcriptStats.mtimeMs));
 
-      if (lines.length <= trackedSession.processedLineCount) {
-        continue;
-      }
+        if (lines.length <= trackedSession.processedLineCount) {
+          continue;
+        }
 
-      const nextLines = lines.slice(trackedSession.processedLineCount);
-      trackedSession.processedLineCount = lines.length;
+        const nextLines = lines.slice(trackedSession.processedLineCount);
+        trackedSession.processedLineCount = lines.length;
 
-      if (!trackedSession.startedEmitted) {
-        emitSessionStart(trackedSession);
-      }
+        if (!trackedSession.startedEmitted) {
+          emitSessionStart(trackedSession);
+        }
 
-      const fileWriteEvents = nextLines.flatMap((line) =>
-        parseFileWriteEvents(line, trackedSession),
-      );
+        const fileWriteEvents = nextLines.flatMap((line) =>
+          parseFileWriteEvents(line, trackedSession),
+        );
 
-      if (fileWriteEvents.length > 0) {
-        trackedSession.lastObservedAt = fileWriteEvents[fileWriteEvents.length - 1].timestamp;
-        onEvents(fileWriteEvents);
-        log('codex', 'emitted codex file activity', {
-          sessionId: trackedSession.sessionId,
-          fileWrites: fileWriteEvents.map((event) => event.filePath),
-        });
+        if (fileWriteEvents.length > 0) {
+          trackedSession.lastObservedAt = fileWriteEvents[fileWriteEvents.length - 1].timestamp;
+          onEvents(fileWriteEvents);
+          log('codex', 'emitted codex file activity', {
+            sessionId: trackedSession.sessionId,
+            fileWrites: fileWriteEvents.map((event) => event.filePath),
+          });
+        }
+      } catch (error) {
+        if (isFileMissing(error)) {
+          discardMissingSession(trackedSession);
+          continue;
+        }
+
+        throw error;
       }
     }
+  }
+
+  function discardMissingSession(trackedSession: TrackedCodexSession): void {
+    trackedSessions.delete(trackedSession.sessionId);
+    sessionFileCache.delete(trackedSession.sessionId);
+
+    if (trackedSession.cwd) {
+      const cwdKey = normalize(trackedSession.cwd);
+      if (activeSessionByCwd.get(cwdKey) === trackedSession.sessionId) {
+        activeSessionByCwd.delete(cwdKey);
+      }
+    }
+
+    log('codex', 'discarded missing codex session transcript', {
+      sessionId: trackedSession.sessionId,
+      filePath: trackedSession.filePath,
+    });
   }
 
   function emitStaleSessionEnds(): void {
@@ -423,10 +471,26 @@ function parseFileWriteEvents(
     return [];
   }
 
+  const timestamp = parseTimestamp(record.timestamp) ?? Date.now();
+
+  // Nested tools inside an exec call emit one patch_apply_end event per patch.
+  // Count those events directly so a long-running edit loop is not mistaken for
+  // a single outer command.
+  if (record.type === 'event_msg' && record.payload.type === 'patch_apply_end') {
+    const filePaths = extractPatchApplyFilePaths(record.payload);
+
+    return filePaths.map((filePath) => ({
+      type: 'file_write' as const,
+      sessionId: trackedSession.sessionId,
+      tool: 'codex' as const,
+      timestamp,
+      filePath,
+    }));
+  }
+
   if (
     record.type !== 'response_item' ||
     record.payload.type !== 'custom_tool_call' ||
-    record.payload.name !== 'apply_patch' ||
     record.payload.status !== 'completed'
   ) {
     return [];
@@ -438,8 +502,13 @@ function parseFileWriteEvents(
     return [];
   }
 
-  const timestamp = parseTimestamp(record.timestamp) ?? Date.now();
-  const filePaths = extractPatchFilePaths(patchInput);
+  // exec-based patches are counted from patch_apply_end above. Keeping direct
+  // apply_patch support here covers transcript variants without that event.
+  if (record.payload.name === 'exec') {
+    return [];
+  }
+
+  const filePaths = extractCodexPatchFilePaths(record.payload.name, patchInput);
 
   return filePaths.map((filePath) => ({
     type: 'file_write' as const,
@@ -450,13 +519,24 @@ function parseFileWriteEvents(
   }));
 }
 
-function extractPatchFilePaths(patchInput: string): string[] {
-  const pattern = /^\*\*\* (?:Add|Update|Delete) File: (.+)$/gm;
+export function extractCodexPatchFilePaths(toolName: unknown, toolInput: string): string[] {
+  if (toolName !== 'apply_patch' && toolName !== 'exec') {
+    return [];
+  }
+
+  // Codex records direct patch calls as `apply_patch`. In this environment, the
+  // same patch can also be nested in a completed `exec` call, so identify the
+  // explicit nested tool invocation before treating it as a file write.
+  if (toolName === 'exec' && !toolInput.includes('tools.apply_patch')) {
+    return [];
+  }
+
+  const pattern = /(?:^|\r?\n|\\n)\*\*\* (?:Add|Update|Delete) File: (.+?)(?=\r?\n|\\n)/g;
   const filePaths = new Set<string>();
   let match: RegExpExecArray | null = null;
 
-  while ((match = pattern.exec(patchInput)) !== null) {
-    filePaths.add(match[1].trim().replaceAll('\\', '/'));
+  while ((match = pattern.exec(toolInput)) !== null) {
+    filePaths.add(match[1].trim().replaceAll('\\', '/').replace(/\/{2,}/g, '/'));
   }
 
   return [...filePaths];
@@ -505,4 +585,23 @@ async function fileExists(path: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+export function extractPatchApplyFilePaths(payload: Record<string, unknown>): string[] {
+  if (payload.success !== true || !isRecord(payload.changes)) {
+    return [];
+  }
+
+  return Object.keys(payload.changes)
+    .map((filePath) => filePath.trim().replaceAll('\\', '/'))
+    .filter(Boolean);
+}
+
+function isFileMissing(error: unknown): boolean {
+  return Boolean(
+    error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      (error as { code?: unknown }).code === 'ENOENT',
+  );
 }
