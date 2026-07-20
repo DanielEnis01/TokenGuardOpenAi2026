@@ -1,6 +1,7 @@
 import React from 'react';
 import { createHashRouter, Outlet, Navigate } from "react-router";
 import { useAuth } from './providers/AuthProvider';
+import { firebaseConfigurationError } from './lib/firebase';
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import Monitor from "./pages/Monitor";
@@ -26,6 +27,11 @@ function ProtectedLayout() {
   }
 
   if (!user) {
+    // Keep local dashboard work usable before the Firebase project credentials
+    // are supplied. Production remains protected by Firebase authentication.
+    if (firebaseConfigurationError && import.meta.env.DEV) {
+      return React.createElement(Outlet);
+    }
     return React.createElement(Navigate, { to: '/auth', replace: true });
   }
 

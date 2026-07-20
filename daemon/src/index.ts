@@ -219,6 +219,25 @@ const server = createServer(async (request, response) => {
         session = result.session;
       }
 
+      // A hook denial is the first hard evidence that the requested stop was
+      // enforced: Codex tried to begin another edit and the plugin refused it.
+      // Only then resolve the loop in the UI. A dashboard click on its own is
+      // merely a request because it cannot interrupt an already-running tool.
+      if (!decision.allowed) {
+        const stopReason = session.lastStopRequestReason ?? 'auto_stopped';
+        const result = processEventQueue(
+          createStopEnforcedEvents(
+            body.sessionId,
+            body.tool,
+            timestamp,
+            stopReason,
+            filePaths[0],
+            session.activeSpirals,
+          ),
+        );
+        session = result.session;
+      }
+
       logDaemon('enforcement', decision.allowed ? 'allowed Codex edit' : 'blocked Codex edit', {
         sessionId: body.sessionId,
         filePaths,
@@ -523,6 +542,42 @@ function createSessionStopEvents(
       reason: 'user_confirmed',
       filePath: firstSpiral?.filePath ?? null,
     },
+  ];
+}
+
+function createStopEnforcedEvents(
+  sessionId: string,
+  tool: SessionEvent['tool'],
+  timestamp: number,
+  reason: NonNullable<CurrentSessionState['lastStopRequestReason']>,
+  filePath: string,
+  activeSpirals: CurrentSessionState['activeSpirals'],
+): SessionEvent[] {
+  const spiralReason: SpiralResolutionReason =
+    reason === 'auto_stopped'
+      ? 'auto_stopped'
+      : reason === 'user_confirmed'
+        ? 'user_confirmed'
+        : 'hard_cap';
+
+  return [
+    {
+      type: 'agent_stopped',
+      sessionId,
+      tool,
+      timestamp,
+      reason,
+      filePath,
+    },
+    ...activeSpirals.map((spiral) => ({
+      type: 'spiral_stop' as const,
+      sessionId,
+      tool,
+      timestamp,
+      filePath: spiral.filePath,
+      reason: spiralReason,
+      costSavedUsd: spiral.estimatedWasteUsd ?? null,
+    })),
   ];
 }
 

@@ -1,13 +1,30 @@
 import { AppShell } from '../components/AppShell';
 import { LogOut, CreditCard, User, Bell, Shield, Database } from 'lucide-react';
 import { useNavigate } from 'react-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getWebsitePricingUrl } from '../lib/externalLinks';
 import { useAuth } from '../providers/AuthProvider';
 
 export default function Settings() {
   const navigate = useNavigate();
   const pricingUrl = getWebsitePricingUrl();
+  const { user, logout } = useAuth();
+  const [profileEmail, setProfileEmail] = useState(user?.email ?? 'demo@tokenguard.dev');
+  const [profileDraft, setProfileDraft] = useState(profileEmail);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [windowsNotifications, setWindowsNotifications] = useState(() =>
+    typeof Notification !== 'undefined' && Notification.permission === 'granted',
+  );
+  const [budgetWarnings, setBudgetWarnings] = useState(true);
+  const [weeklyReports, setWeeklyReports] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user?.email) {
+      setProfileEmail(user.email);
+      setProfileDraft(user.email);
+    }
+  }, [user?.email]);
 
   const handleLogout = async () => {
     try {
@@ -64,7 +81,7 @@ export default function Settings() {
             <SettingRow
               icon={<User className="w-5 h-5" />}
               label="Profile"
-              description="demo@tokenguard.dev"
+              description={profileEmail}
               action={
                 isEditingProfile ? (
                   <div className="flex items-center gap-2">

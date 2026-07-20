@@ -29,8 +29,24 @@ function createWindow() {
     win.loadFile(path.join(__dirname, '../dist/index.html'));
   }
 
-  // Open external links in the OS browser, not in Electron
+  // Firebase's popup must remain in Electron so it can return the signed-in
+  // user to the dashboard renderer. Ordinary links still open externally.
   win.webContents.setWindowOpenHandler(({ url }) => {
+    if (/^https:\/\/[^/]+\/__\/auth\//.test(url)) {
+      return {
+        action: 'allow',
+        overrideBrowserWindowOptions: {
+          width: 520,
+          height: 720,
+          autoHideMenuBar: true,
+          webPreferences: {
+            contextIsolation: true,
+            nodeIntegration: false,
+          },
+        },
+      };
+    }
+
     shell.openExternal(url);
     return { action: 'deny' };
   });
