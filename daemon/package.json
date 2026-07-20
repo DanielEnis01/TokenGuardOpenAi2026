@@ -8,7 +8,9 @@
     "dev": "node --watch --experimental-strip-types src/index.ts",
     "check": "tsc --noEmit -p tsconfig.json",
     "smoke:spiral": "node scripts/smoke-spiral.mjs",
-    "smoke:enforcement": "node scripts/smoke-enforcement.mjs"
+    "smoke:enforcement": "node scripts/smoke-enforcement.mjs",
+    "smoke:codex-tokens": "node --experimental-strip-types scripts/smoke-codex-tokens.ts",
+    "smoke:rule-results": "node --experimental-strip-types scripts/smoke-rule-results.ts"
   },
   "engines": {
     "node": ">=22.14.0"

@@ -4,6 +4,7 @@ import { join, normalize } from 'node:path';
 import { homedir } from 'node:os';
 
 import type { SessionEvent } from '../../shared/types.ts';
+import { parseCodexTokenUsage, type CodexTokenUsage } from './codex-token-usage.ts';
 
 const DEFAULT_CODEX_HOME = join(homedir(), '.codex');
 const DEFAULT_POLL_INTERVAL_MS = 2_000;
@@ -30,6 +31,7 @@ interface TrackedCodexSession {
   model: string | null;
   source: string | null;
   originator: string | null;
+  initialTokenUsage: CodexTokenUsage | null;
   processedLineCount: number;
   startedEmitted: boolean;
   endedEmitted: boolean;
@@ -185,6 +187,7 @@ export function createCodexWatcher({
     }
 
     const metadata = readSessionMetadata(lines);
+    const initialTokenUsage = readLatestCodexTokenUsage(lines, 'total');
     const transcriptStats = await stat(filePath);
 
     return {
@@ -194,6 +197,7 @@ export function createCodexWatcher({
       model: metadata.model,
       source: metadata.source,
       originator: metadata.originator,
+      initialTokenUsage,
       processedLineCount: lines.length,
       startedEmitted: false,
       endedEmitted: false,
@@ -222,13 +226,30 @@ export function createCodexWatcher({
       const fileWriteEvents = nextLines.flatMap((line) =>
         parseFileWriteEvents(line, trackedSession),
       );
+      const tokenCountEvents = nextLines.flatMap((line) =>
+        parseTokenCountEvents(line, trackedSession),
+      );
+      const nextEvents = [...fileWriteEvents, ...tokenCountEvents].sort(
+        (left, right) => left.timestamp - right.timestamp,
+      );
+
+      if (nextEvents.length > 0) {
+        trackedSession.lastObservedAt = nextEvents[nextEvents.length - 1].timestamp;
+        onEvents(nextEvents);
+      }
 
       if (fileWriteEvents.length > 0) {
-        trackedSession.lastObservedAt = fileWriteEvents[fileWriteEvents.length - 1].timestamp;
-        onEvents(fileWriteEvents);
         log('codex', 'emitted codex file activity', {
           sessionId: trackedSession.sessionId,
           fileWrites: fileWriteEvents.map((event) => event.filePath),
+        });
+      }
+
+      if (tokenCountEvents.length > 0) {
+        log('codex', 'emitted codex token usage', {
+          sessionId: trackedSession.sessionId,
+          tokensIn: tokenCountEvents.reduce((total, event) => total + event.tokensIn, 0),
+          tokensOut: tokenCountEvents.reduce((total, event) => total + event.tokensOut, 0),
         });
       }
     }
@@ -311,12 +332,23 @@ export function createCodexWatcher({
       },
     ]);
 
+    const initialTokenUsage = trackedSession.initialTokenUsage;
+    trackedSession.initialTokenUsage = null;
+
+    if (initialTokenUsage) {
+      onEvents([
+        createTokenCountEvent(trackedSession, initialTokenUsage, trackedSession.lastObservedAt),
+      ]);
+    }
+
     log('codex', 'detected codex session', {
       sessionId: trackedSession.sessionId,
       cwd: trackedSession.cwd,
       model: trackedSession.model,
       source: trackedSession.source,
       originator: trackedSession.originator,
+      tokensIn: initialTokenUsage?.tokensIn ?? 0,
+      tokensOut: initialTokenUsage?.tokensOut ?? 0,
     });
   }
 
@@ -448,6 +480,57 @@ function parseFileWriteEvents(
     timestamp,
     filePath,
   }));
+}
+
+function parseTokenCountEvents(
+  line: string,
+  trackedSession: TrackedCodexSession,
+): Extract<SessionEvent, { type: 'token_count' }>[] {
+  const record = safeParseJson(line);
+  const usage = parseCodexTokenUsage(record, 'last');
+
+  if (!usage) {
+    return [];
+  }
+
+  return [
+    createTokenCountEvent(
+      trackedSession,
+      usage,
+      isTranscriptRecord(record) ? parseTimestamp(record.timestamp) ?? Date.now() : Date.now(),
+    ),
+  ];
+}
+
+function createTokenCountEvent(
+  trackedSession: TrackedCodexSession,
+  usage: CodexTokenUsage,
+  timestamp: number,
+): Extract<SessionEvent, { type: 'token_count' }> {
+  return {
+    type: 'token_count',
+    sessionId: trackedSession.sessionId,
+    tool: 'codex',
+    timestamp,
+    model: trackedSession.model,
+    tokensIn: usage.tokensIn,
+    tokensOut: usage.tokensOut,
+  };
+}
+
+function readLatestCodexTokenUsage(
+  lines: string[],
+  kind: 'total',
+): CodexTokenUsage | null {
+  for (const line of [...lines].reverse()) {
+    const usage = parseCodexTokenUsage(safeParseJson(line), kind);
+
+    if (usage) {
+      return usage;
+    }
+  }
+
+  return null;
 }
 
 function extractPatchFilePaths(patchInput: string): string[] {
