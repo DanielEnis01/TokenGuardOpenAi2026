@@ -8,6 +8,9 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { getFirebaseFirestore } from '../lib/firebase';
+import { useAuth } from './AuthProvider';
 import type { CliToolActionResult } from '../../../../shared/cli.ts';
 import type { GuardrailConfig } from '../../../../shared/config.ts';
 import { getDaemonHttpOrigin, getDaemonWsUrl } from '../../../../shared/runtime.ts';
@@ -36,6 +39,7 @@ interface DaemonContextValue {
 const DaemonContext = createContext<DaemonContextValue | null>(null);
 
 export function DaemonProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [session, setSession] = useState<CurrentSessionState>(mockSession);
   const [config, setConfig] = useState<GuardrailConfig>(mockGuardrailConfig);
   const [connections, setConnections] = useState<ToolConnection[]>(mockToolConnections);
@@ -150,10 +154,10 @@ export function DaemonProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      setConnectionStatus(hasConnectedRef.current ? 'connecting' : 'connecting');
+      setConnectionStatus('connecting');
 
       try {
-        const [sessionResponse, configResponse, connectionsResponse] = await Promise.all([
+        const [sessionResponse, daemonConfigResponse, connectionsResponse] = await Promise.all([
           fetchJson<{ session: CurrentSessionState }>('/session/current'),
           fetchJson<{ config: GuardrailConfig }>('/config'),
           fetchJson<{ connections: ToolConnection[] }>('/connections'),
@@ -163,8 +167,33 @@ export function DaemonProvider({ children }: { children: ReactNode }) {
           return;
         }
 
+        let finalConfig = daemonConfigResponse.config;
+
+        if (user) {
+          try {
+            const docRef = doc(getFirebaseFirestore(), 'guardrailPreferences', user.uid);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+              finalConfig = docSnap.data() as GuardrailConfig;
+              // Sync Firestore config to daemon
+              await fetchJson<{ config: GuardrailConfig }>('/config', {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(finalConfig),
+              });
+            } else {
+              // Initialize Firestore with daemon config
+              await setDoc(docRef, finalConfig);
+            }
+          } catch (firestoreError) {
+            console.error('Firestore config sync failed:', firestoreError);
+          }
+        }
+
         setSession(sessionResponse.session);
-        setConfig(configResponse.config);
+        setConfig(finalConfig);
         setConnections(connectionsResponse.connections);
         setIsUsingMockData(false);
         setConnectionStatus('connected');
@@ -176,11 +205,25 @@ export function DaemonProvider({ children }: { children: ReactNode }) {
           return;
         }
 
+        let finalConfig = mockGuardrailConfig;
+
+        if (user) {
+          try {
+            const docRef = doc(getFirebaseFirestore(), 'guardrailPreferences', user.uid);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+              finalConfig = docSnap.data() as GuardrailConfig;
+            }
+          } catch (firestoreError) {
+            console.error('Firestore config sync while daemon offline failed:', firestoreError);
+          }
+        }
+
         setErrorMessage(error instanceof Error ? error.message : 'Failed to connect to the daemon.');
 
         if (!hasConnectedRef.current) {
           setSession(mockSession);
-          setConfig(mockGuardrailConfig);
+          setConfig(finalConfig);
           setConnections(mockToolConnections);
           setIsUsingMockData(true);
           setConnectionStatus('mock');
@@ -206,11 +249,21 @@ export function DaemonProvider({ children }: { children: ReactNode }) {
       socketRef.current?.close();
       socketRef.current = null;
     };
-  }, [openWebSocket, scheduleReconnect]);
+  }, [openWebSocket, scheduleReconnect, user]);
 
   const updateConfig = useCallback(
     async (patch: Partial<GuardrailConfig>) => {
-      setConfig((current) => ({ ...current, ...patch }));
+      // Optimistic update
+      setConfig((current) => {
+        const next = { ...current, ...patch };
+        if (user) {
+          const docRef = doc(getFirebaseFirestore(), 'guardrailPreferences', user.uid);
+          setDoc(docRef, next).catch((err) => {
+            console.error('Failed to save to Firestore on update:', err);
+          });
+        }
+        return next;
+      });
 
       try {
         const response = await fetchJson<{ config: GuardrailConfig }>('/config', {
@@ -221,7 +274,18 @@ export function DaemonProvider({ children }: { children: ReactNode }) {
           body: JSON.stringify(patch),
         });
 
-        setConfig(response.config);
+        // Use sanitized daemon response and sync it
+        setConfig((current) => {
+          const next = { ...current, ...response.config };
+          if (user) {
+            const docRef = doc(getFirebaseFirestore(), 'guardrailPreferences', user.uid);
+            setDoc(docRef, next).catch((err) => {
+              console.error('Failed to save sanitized config to Firestore:', err);
+            });
+          }
+          return next;
+        });
+
         setIsUsingMockData(false);
         setConnectionStatus('connected');
         setErrorMessage(null);
@@ -237,7 +301,7 @@ export function DaemonProvider({ children }: { children: ReactNode }) {
         }
       }
     },
-    [],
+    [user],
   );
 
   const resolveSpiral = useCallback(

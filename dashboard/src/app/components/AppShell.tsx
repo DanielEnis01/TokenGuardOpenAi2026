@@ -92,26 +92,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
-
-        <div className="min-w-[220px] px-3 pb-4">
-          <a
-            href={pricingUrl}
-            className="sidebar-plan flex items-center gap-3 rounded-lg px-3 py-2.5"
-            style={{
-              background: 'var(--bg-elevated)',
-              border: '1px solid var(--border-subtle)',
-              color: 'var(--text-primary)',
-              font: 'var(--font-caption)',
-              backdropFilter: 'var(--blur-elevated)',
-              WebkitBackdropFilter: 'var(--blur-elevated)',
-            }}
-          >
-            <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full" style={{ background: 'var(--accent)', color: '#0b0b0d' }}>
-              <span className="h-1.5 w-1.5 rounded-full" style={{ background: 'currentColor' }} />
-            </span>
-            <span className="sidebar-copy whitespace-nowrap">Free plan</span>
-          </a>
-        </div>
       </aside>
 
       <div className="dashboard-content flex min-w-0 flex-1 flex-col overflow-hidden">
