@@ -2,3 +2,6 @@ node_modules/
 **/node_modules/
 daemon/data/
 .codex-temp/
+.env
+.env.local
+.env.*.local

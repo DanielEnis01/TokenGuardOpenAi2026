@@ -3,22 +3,19 @@ import { LogOut, CreditCard, User, Bell, Shield, Database } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { useState } from 'react';
 import { getWebsitePricingUrl } from '../lib/externalLinks';
+import { useAuth } from '../providers/AuthProvider';
 
 export default function Settings() {
   const navigate = useNavigate();
   const pricingUrl = getWebsitePricingUrl();
-  const [profileEmail, setProfileEmail] = useState('demo@tokenguard.dev');
-  const [profileDraft, setProfileDraft] = useState(profileEmail);
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [windowsNotifications, setWindowsNotifications] = useState(() =>
-    typeof Notification !== 'undefined' && Notification.permission === 'granted',
-  );
-  const [budgetWarnings, setBudgetWarnings] = useState(true);
-  const [weeklyReports, setWeeklyReports] = useState(false);
-  const [notificationMessage, setNotificationMessage] = useState<string | null>(null);
 
-  const handleLogout = () => {
-    navigate('/');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/auth');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
   };
 
   const toggleWindowsNotifications = async (enabled: boolean) => {
@@ -67,7 +64,7 @@ export default function Settings() {
             <SettingRow
               icon={<User className="w-5 h-5" />}
               label="Profile"
-              description={profileEmail}
+              description="demo@tokenguard.dev"
               action={
                 isEditingProfile ? (
                   <div className="flex items-center gap-2">
@@ -84,26 +81,6 @@ export default function Settings() {
                 ) : (
                   <button type="button" onClick={() => { setProfileDraft(profileEmail); setIsEditingProfile(true); }} className="rounded-md px-3 py-1.5" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', color: 'var(--text-primary)', font: 'var(--font-label)' }}>Edit</button>
                 )
-              }
-            />
-            <SettingRow
-              icon={<CreditCard className="w-5 h-5" />}
-              label="Billing & Plans"
-              description="Free plan - upgrade opens the public pricing page"
-              action={
-                <a
-                  href={pricingUrl}
-                  className="px-3 py-1.5 rounded-xl transition-opacity hover:opacity-90"
-                  style={{ 
-                    background: 'var(--bg-elevated)',
-                    color: 'var(--text-primary)',
-                    border: '1px solid var(--border-default)',
-                    font: 'var(--font-label)',
-                    backdropFilter: 'var(--blur-elevated)',
-                    WebkitBackdropFilter: 'var(--blur-elevated)'
-                  }}>
-                  View Pricing
-                </a>
               }
             />
           </Section>
@@ -146,12 +123,12 @@ export default function Settings() {
               description="Download all your session history and settings"
               action={
                 <button type="button" onClick={exportData} className="px-3 py-1.5 rounded-md transition-colors"
-                        style={{ 
-                          background: 'var(--bg-elevated)',
-                          border: '1px solid var(--border-default)',
-                          color: 'var(--text-primary)',
-                          font: 'var(--font-label)'
-                        }}>
+                  style={{
+                    background: 'var(--bg-elevated)',
+                    border: '1px solid var(--border-default)',
+                    color: 'var(--text-primary)',
+                    font: 'var(--font-label)'
+                  }}>
                   Export
                 </button>
               }
@@ -164,10 +141,10 @@ export default function Settings() {
               label="Sign Out"
               description="Log out of your TokenGuard account"
               action={
-                <button 
+                <button
                   onClick={handleLogout}
                   className="px-3 py-1.5 rounded-md transition-colors hover:opacity-80"
-                  style={{ 
+                  style={{
                     background: 'transparent',
                     border: '1px solid var(--status-danger)',
                     color: 'var(--status-danger)',
@@ -216,7 +193,7 @@ function SettingRow({ icon, label, description, action }: {
 }) {
   return (
     <div className="flex items-center justify-between py-4"
-         style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+      style={{ borderBottom: '1px solid var(--border-subtle)' }}>
       <div className="flex items-start gap-3 flex-1">
         <div className="mt-0.5" style={{ color: 'var(--text-secondary)' }}>
           {icon}
@@ -240,15 +217,15 @@ function SettingRow({ icon, label, description, action }: {
 function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (checked: boolean) => void; label: string }) {
   return (
     <button type="button" role="switch" aria-checked={checked} aria-label={label} onClick={() => onChange(!checked)} className="relative h-5 w-9 rounded-full transition-colors"
-         style={{ 
-           background: checked ? 'var(--status-ok)' : 'var(--bg-elevated)',
-           border: checked ? 'none' : '1px solid var(--border-default)',
-           cursor: 'pointer',
-         }}>
+      style={{
+        background: checked ? 'var(--status-ok)' : 'var(--bg-elevated)',
+        border: checked ? 'none' : '1px solid var(--border-default)',
+        cursor: 'pointer',
+      }}>
       <div className="absolute top-0.5 transition-transform w-4 h-4 bg-white rounded-full"
-           style={{ 
-             left: checked ? 'calc(100% - 18px)' : '2px'
-           }} />
+        style={{
+          left: checked ? 'calc(100% - 18px)' : '2px'
+        }} />
     </button>
   );
 }
