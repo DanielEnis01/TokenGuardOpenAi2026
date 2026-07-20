@@ -2,13 +2,20 @@ import { AppShell } from '../components/AppShell';
 import { LogOut, CreditCard, User, Bell, Shield, Database } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { getWebsitePricingUrl } from '../lib/externalLinks';
+import { useAuth } from '../providers/AuthProvider';
 
 export default function Settings() {
   const navigate = useNavigate();
   const pricingUrl = getWebsitePricingUrl();
+  const { user, logout } = useAuth();
 
-  const handleLogout = () => {
-    navigate('/');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/auth');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
   };
 
   return (
@@ -24,7 +31,7 @@ export default function Settings() {
             <SettingRow
               icon={<User className="w-5 h-5" />}
               label="Profile"
-              description="demo@tokenguard.dev"
+              description={user?.email || "demo@tokenguard.dev"}
               action={
                 <button className="px-3 py-1.5 rounded-md transition-colors"
                         style={{ 
@@ -35,26 +42,6 @@ export default function Settings() {
                         }}>
                   Edit
                 </button>
-              }
-            />
-            <SettingRow
-              icon={<CreditCard className="w-5 h-5" />}
-              label="Billing & Plans"
-              description="Free plan - upgrade opens the public pricing page"
-              action={
-                <a
-                  href={pricingUrl}
-                  className="px-3 py-1.5 rounded-xl transition-opacity hover:opacity-90"
-                  style={{ 
-                    background: 'var(--bg-elevated)',
-                    color: 'var(--text-primary)',
-                    border: '1px solid var(--border-default)',
-                    font: 'var(--font-label)',
-                    backdropFilter: 'var(--blur-elevated)',
-                    WebkitBackdropFilter: 'var(--blur-elevated)'
-                  }}>
-                  View Pricing
-                </a>
               }
             />
           </Section>

@@ -1,19 +1,55 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { MeshGradient } from '@paper-design/shaders-react';
 import { Lock, Mail } from 'lucide-react';
+import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
 import { getWebsiteAuthUrl } from '../lib/externalLinks';
+import { firebaseConfigurationError, getFirebaseAuth } from '../lib/firebase';
+import { useAuth } from '../providers/AuthProvider';
 import './auth-page.css';
 
 export default function Auth() {
   const navigate = useNavigate();
   const websiteAuthUrl = getWebsiteAuthUrl();
+  const { user, loading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(firebaseConfigurationError);
+  const [isSigningIn, setIsSigningIn] = useState(false);
 
-  const handleSubmit = (event: React.FormEvent) => {
+  useEffect(() => {
+    if (user && !loading) {
+      navigate('/monitor', { replace: true });
+    }
+  }, [user, loading, navigate]);
+
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    navigate('/monitor');
+    setErrorMessage(null);
+    setIsSigningIn(true);
+
+    try {
+      await signInWithEmailAndPassword(getFirebaseAuth(), email, password);
+      navigate('/monitor');
+    } catch (error) {
+      setErrorMessage(getSignInErrorMessage(error));
+    } finally {
+      setIsSigningIn(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setErrorMessage(null);
+    setIsSigningIn(true);
+
+    try {
+      await signInWithPopup(getFirebaseAuth(), new GoogleAuthProvider());
+      navigate('/monitor');
+    } catch (error) {
+      setErrorMessage(getSignInErrorMessage(error));
+    } finally {
+      setIsSigningIn(false);
+    }
   };
 
   return (
@@ -68,15 +104,21 @@ export default function Auth() {
                 />
               </div>
 
-              <button className="sign-in-button" type="submit">
-                <span className="button-text">Sign in</span>
+              {errorMessage ? (
+                <p role="alert" style={{ color: 'var(--status-danger)', font: 'var(--font-caption)', textAlign: 'left' }}>
+                  {errorMessage}
+                </p>
+              ) : null}
+
+              <button className="sign-in-button" type="submit" disabled={isSigningIn}>
+                <span className="button-text">{isSigningIn ? 'Signing in…' : 'Sign in'}</span>
               </button>
 
               <div className="divider">
                 <span className="divider-text">or</span>
               </div>
 
-              <button type="button" className="google-button" onClick={() => navigate('/monitor')}>
+              <button type="button" className="google-button" onClick={() => void handleGoogleSignIn()} disabled={isSigningIn}>
                 <svg className="google-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                   <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
@@ -98,4 +140,26 @@ export default function Auth() {
       </div>
     </main>
   );
+}
+
+function getSignInErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message.startsWith('Firebase is not configured')) {
+    return error.message;
+  }
+
+  const code = typeof error === 'object' && error !== null && 'code' in error ? error.code : null;
+
+  if (code === 'auth/invalid-credential' || code === 'auth/wrong-password') {
+    return 'The email address or password is incorrect.';
+  }
+
+  if (code === 'auth/invalid-email') {
+    return 'Enter a valid email address.';
+  }
+
+  if (code === 'auth/popup-closed-by-user') {
+    return 'Google sign-in was cancelled.';
+  }
+
+  return 'Sign-in failed. Please try again.';
 }
