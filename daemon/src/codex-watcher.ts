@@ -1,4 +1,4 @@
-import { access, readFile, readdir } from 'node:fs/promises';
+import { access, readFile, readdir, stat } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { join, normalize } from 'node:path';
 import { homedir } from 'node:os';
@@ -147,7 +147,7 @@ export function createCodexWatcher({
       const existingSession = trackedSessions.get(sessionEntry.id);
 
       if (existingSession) {
-        existingSession.lastObservedAt = sessionEntry.updatedAt ?? Date.now();
+        existingSession.lastObservedAt = Math.max(existingSession.lastObservedAt, sessionEntry.updatedAt ?? 0);
         continue;
       }
 
@@ -185,6 +185,7 @@ export function createCodexWatcher({
     }
 
     const metadata = readSessionMetadata(lines);
+    const transcriptStats = await stat(filePath);
 
     return {
       sessionId: sessionEntry.id,
@@ -196,7 +197,7 @@ export function createCodexWatcher({
       processedLineCount: lines.length,
       startedEmitted: false,
       endedEmitted: false,
-      lastObservedAt: sessionEntry.updatedAt ?? Date.now(),
+      lastObservedAt: Math.max(sessionEntry.updatedAt ?? 0, Math.floor(transcriptStats.mtimeMs)),
     };
   }
 
@@ -204,6 +205,8 @@ export function createCodexWatcher({
     for (const trackedSession of trackedSessions.values()) {
       const fileContents = await readFile(trackedSession.filePath, 'utf8');
       const lines = splitJsonLines(fileContents);
+      const transcriptStats = await stat(trackedSession.filePath);
+      trackedSession.lastObservedAt = Math.max(trackedSession.lastObservedAt, Math.floor(transcriptStats.mtimeMs));
 
       if (lines.length <= trackedSession.processedLineCount) {
         continue;
@@ -252,6 +255,7 @@ export function createCodexWatcher({
         }
       }
 
+
       onEvents([
         {
           type: 'session_end',
@@ -282,6 +286,7 @@ export function createCodexWatcher({
         if (priorTrackedSession) {
           priorTrackedSession.endedEmitted = true;
         }
+
 
         onEvents([
           {

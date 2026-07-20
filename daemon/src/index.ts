@@ -2,7 +2,6 @@ import { createServer } from 'node:http';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
-import { parse } from 'node:url';
 
 import WebSocket, { WebSocketServer } from 'ws';
 
@@ -60,7 +59,7 @@ const server = createServer(async (request, response) => {
     return;
   }
 
-  const url = parse(request.url, true);
+  const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
   const pathName = url.pathname ?? '/';
 
   try {
@@ -240,7 +239,7 @@ const server = createServer(async (request, response) => {
 });
 
 server.on('upgrade', (request, socket, head) => {
-  const { pathname } = parse(request.url ?? '/', true);
+  const { pathname } = new URL(request.url ?? '/', `http://${request.headers.host || 'localhost'}`);
 
   if (pathname !== DAEMON_WS_PATH) {
     logDaemon('ws', 'rejected websocket upgrade', { pathname });
