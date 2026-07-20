@@ -57,7 +57,7 @@ export default function Monitor() {
       timeInLoop: formatDuration(spiral.startedAt, spiral.updatedAt),
       estimatedWaste:
         typeof spiral.estimatedWasteUsd === 'number' ? formatUsd(spiral.estimatedWasteUsd) : '-',
-      action: 'Stop' as const,
+      action: currentSession.lastStopRequestedAt ? 'Send again' : 'Stop',
     })),
     ...loopDetectorRows.filter((row) => row.status === 'resolved'),
   ];
@@ -165,7 +165,7 @@ export default function Monitor() {
         {currentSession.agentStatus === 'stopped' ? (
           <InterventionBanner
             tone="danger"
-            title="Agent stopped"
+            title="Stop enforced"
             description={describeStopReason(
               currentSession.lastStopReason,
               currentSession.lastStoppedFilePath,
@@ -384,7 +384,7 @@ export default function Monitor() {
                     <span style={{ font: 'var(--font-caption)', color: 'var(--text-secondary)' }}>{row.timeInLoop}</span>
                     <span style={{ font: 'var(--font-caption)', color: 'var(--text-secondary)' }}>{row.estimatedWaste}</span>
                     <div>
-                      {row.action === 'Stop' ? (
+                      {row.status === 'active' ? (
                         <button
                           type="button"
                           onClick={() => {
@@ -403,7 +403,7 @@ export default function Monitor() {
                             opacity: isUsingMockData ? 0.6 : 1,
                           }}
                         >
-                          Stop
+                          {row.action}
                         </button>
                       ) : (
                         <span style={{ font: 'var(--font-caption)', color: 'var(--text-muted)' }}>-</span>
@@ -490,7 +490,7 @@ function LiveSessionPanel({
         : 'var(--text-muted)';
 
   const statusLabel = isStopped
-    ? 'Agent stopped'
+    ? 'Stop enforced'
     : editsContinuedAfterStopRequest
       ? 'Edits still running'
       : session.lastStopRequestedAt
@@ -621,7 +621,7 @@ function SessionActionsPanel({
             cursor: canRequestStop ? 'pointer' : 'not-allowed',
           }}
         >
-          {isStopped ? 'Agent stopped' : stopWasRequested ? 'Send stop again' : 'Stop agent'}
+          {isStopped ? 'Stop enforced' : stopWasRequested ? 'Send stop again' : 'Stop agent'}
         </button>
         <Link
           to="/guardrails"
@@ -1001,12 +1001,12 @@ function describeStopReason(
   switch (reason) {
     case 'auto_stopped':
       return filePath
-        ? `${filePath} was auto-stopped after TokenGuard detected a live spiral.`
-        : 'TokenGuard auto-stopped the agent after a spiral was detected.';
+        ? `${filePath} tried to continue after TokenGuard detected a live spiral, and the plugin blocked that edit.`
+        : 'TokenGuard blocked the edit that tried to continue after a live spiral was detected.';
     case 'user_confirmed':
       return filePath
-        ? `${filePath} was stopped from the dashboard intervention controls.`
-        : 'The agent was stopped from the dashboard intervention controls.';
+        ? `${filePath} tried to continue after the dashboard stop request, and the plugin blocked that edit.`
+        : 'TokenGuard blocked the edit that tried to continue after the dashboard stop request.';
     case 'session_cap':
       return 'The active session exceeded its token cap and TokenGuard issued a hard stop.';
     case 'monthly_budget':
@@ -1014,7 +1014,7 @@ function describeStopReason(
     case 'hard_cap':
       return 'TokenGuard stopped the agent because a hard cap was reached.';
     default:
-      return 'The current session is stopped until a new session begins.';
+      return 'TokenGuard blocked the edit that tried to continue this session.';
   }
 }
 
