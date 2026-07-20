@@ -17,20 +17,31 @@ Per the product workflow:
 
 Both apps are intentionally web frontends today to speed up iteration before desktop packaging.
 
-## Run the website frontend
+## Run the dashboard
 
 ```bash
-cd website
+cd dashboard
+# Run npm install the first time you use this PC.
 npm install
 npm run dev
 ```
 
-## Run the dashboard frontend
+## Run the website
 
 ```bash
-cd dashboard
+cd website
+# Run npm install the first time you use this PC.
 npm install
 npm run dev
+```
+
+## Run the daemon
+
+```bash
+cd daemon
+# Run npm install the first time you use this PC.
+npm install
+npm run start
 ```
 
 ## Build checks
