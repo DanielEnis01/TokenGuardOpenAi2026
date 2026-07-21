@@ -16,6 +16,7 @@ export type SessionEventType =
   | 'file_write'
   | 'token_count'
   | 'spiral_start'
+  | 'spiral_update'
   | 'spiral_stop'
   | 'budget_threshold'
   | 'context_pressure'
@@ -105,6 +106,14 @@ export interface AgentStoppedEvent extends BaseSessionEvent {
   filePath?: string | null;
 }
 
+/** A later write to an already-detected loop; it is not a new detection. */
+export interface SpiralUpdateEvent extends BaseSessionEvent {
+  type: 'spiral_update';
+  filePath: string;
+  editCount: number;
+  estimatedWasteUsd?: number | null;
+}
+
 /**
  * A control request has been sent, but the daemon has not observed a real
  * session end yet. This distinction keeps the dashboard honest when Codex is
@@ -127,6 +136,7 @@ export type SessionEvent =
   | FileWriteEvent
   | TokenCountEvent
   | SpiralStartEvent
+  | SpiralUpdateEvent
   | SpiralStopEvent
   | BudgetThresholdEvent
   | ContextPressureEvent
@@ -153,6 +163,7 @@ export interface CurrentSessionState {
   tokensIn: number;
   tokensOut: number;
   sessionCostUsd: number;
+  costEstimateAvailable: boolean;
   monthlyCostUsd: number;
   burnRatePerMin: number;
   contextPercent: number;
@@ -213,6 +224,7 @@ export const SESSION_EVENT_TYPES: SessionEventType[] = [
   'file_write',
   'token_count',
   'spiral_start',
+  'spiral_update',
   'spiral_stop',
   'budget_threshold',
   'context_pressure',
@@ -231,6 +243,7 @@ export const EMPTY_CURRENT_SESSION_STATE: CurrentSessionState = {
   tokensIn: 0,
   tokensOut: 0,
   sessionCostUsd: 0,
+  costEstimateAvailable: false,
   monthlyCostUsd: 0,
   burnRatePerMin: 0,
   contextPercent: 0,

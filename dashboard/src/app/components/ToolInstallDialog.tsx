@@ -1,5 +1,6 @@
 import type { CliToolActionResult } from '../../../../shared/cli.ts';
 import type { ToolId } from '../../../../shared/types.ts';
+import { getToolInstallCommands } from '../../../../shared/tools.ts';
 
 import { EmbeddedTerminal } from './LiquidGlass';
 
@@ -28,16 +29,18 @@ export function ToolInstallDialog({
     return null;
   }
 
+  const selectedToolCommands = tools.flatMap((tool) => getToolInstallCommands(tool));
+  const isInstallingCodex = tools.includes('codex');
   const terminalLines = results.length > 0
     ? results.flatMap((result) => [
-        { text: `$ tokenguard connect ${result.tool}` },
+        { text: `$ ${result.command}` },
         { text: result.message, tone: result.success ? 'success' as const : 'danger' as const },
         ...[result.stdout, result.stderr]
           .filter((output): output is string => Boolean(output?.trim()))
           .flatMap((output) => output.trim().split(/\r?\n/).map((text) => ({ text, tone: result.success ? 'success' as const : 'danger' as const }))),
       ])
     : [
-        ...tools.map((tool) => ({ text: `$ tokenguard connect ${tool}` })),
+        ...selectedToolCommands.map((command) => ({ text: `$ ${command}` })),
         { text: isRunning ? 'running local connector install...' : 'ready to run after confirmation', tone: 'muted' as const },
       ];
 
@@ -61,6 +64,11 @@ export function ToolInstallDialog({
             <p className="mt-3" style={{ font: 'var(--font-caption)', color: 'var(--text-secondary)' }}>
               {description}
             </p>
+            {isInstallingCodex ? (
+              <p className="mt-2" style={{ font: 'var(--font-caption)', color: 'var(--text-muted)' }}>
+                This adds the TokenGuard marketplace from GitHub and installs the TokenGuard plugin in Codex.
+              </p>
+            ) : null}
           </div>
           <button
             type="button"
@@ -113,7 +121,7 @@ export function ToolInstallDialog({
               cursor: tools.length > 0 && !isRunning ? 'pointer' : 'not-allowed',
             }}
           >
-            {isRunning ? 'Running install command...' : 'Run install command'}
+            {isRunning ? 'Installing...' : isInstallingCodex ? 'Install TokenGuard plugin' : 'Run install command'}
           </button>
         </div>
       </div>

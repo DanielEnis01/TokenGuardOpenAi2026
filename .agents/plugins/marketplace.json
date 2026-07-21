@@ -1,7 +1,7 @@
 {
-  "name": "personal",
+  "name": "tokenguard",
   "interface": {
-    "displayName": "Personal"
+    "displayName": "TokenGuard Marketplace"
   },
   "plugins": [
     {

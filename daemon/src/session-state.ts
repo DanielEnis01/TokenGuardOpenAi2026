@@ -5,8 +5,9 @@ import {
   type CurrentSessionState,
   type SessionEvent,
   type SpiralStartEvent,
+  type SpiralUpdateEvent,
 } from '../../shared/types.ts';
-import { estimateTokenCostUsd } from '../../shared/pricing.ts';
+import { estimateTokenCostUsd, hasKnownModelPricing } from '../../shared/pricing.ts';
 
 export function createSessionStateStore(initialState = EMPTY_CURRENT_SESSION_STATE) {
   let currentState = cloneCurrentSessionState(initialState);
@@ -39,6 +40,7 @@ function reduceSessionEvent(
         model: event.model ?? null,
         startedAt: event.timestamp,
         agentStatus: 'running',
+        costEstimateAvailable: hasKnownModelPricing(event.model),
       };
 
     case 'session_end':
@@ -62,8 +64,14 @@ function reduceSessionEvent(
         tokensIn,
         tokensOut,
         totalTokens: tokensIn + tokensOut,
-        sessionCostUsd: currentState.sessionCostUsd + deltaCostUsd,
-        monthlyCostUsd: currentState.monthlyCostUsd + deltaCostUsd,
+        sessionCostUsd: deltaCostUsd === null
+          ? currentState.sessionCostUsd
+          : currentState.sessionCostUsd + deltaCostUsd,
+        monthlyCostUsd: deltaCostUsd === null
+          ? currentState.monthlyCostUsd
+          : currentState.monthlyCostUsd + deltaCostUsd,
+        costEstimateAvailable: currentState.costEstimateAvailable && deltaCostUsd !== null,
+        burnRatePerMin: calculateBurnRate(tokensIn + tokensOut, currentState.startedAt, event.timestamp),
       };
     }
 
@@ -77,6 +85,12 @@ function reduceSessionEvent(
         spiralsCaughtToday: existingSpiral
           ? currentState.spiralsCaughtToday
           : currentState.spiralsCaughtToday + 1,
+        activeSpirals: upsertActiveSpiral(currentState.activeSpirals, event),
+      };
+
+    case 'spiral_update':
+      return {
+        ...currentState,
         activeSpirals: upsertActiveSpiral(currentState.activeSpirals, event),
       };
 
@@ -139,7 +153,7 @@ function reduceSessionEvent(
 
 function upsertActiveSpiral(
   activeSpirals: ActiveSpiral[],
-  event: SpiralStartEvent,
+  event: SpiralStartEvent | SpiralUpdateEvent,
 ): ActiveSpiral[] {
   const nextSpiral: ActiveSpiral = {
     filePath: event.filePath,
@@ -166,6 +180,15 @@ function upsertActiveSpiral(
   };
 
   return updatedSpirals;
+}
+
+function calculateBurnRate(totalTokens: number, startedAt: number | null | undefined, now: number): number {
+  if (!startedAt || now <= startedAt) {
+    return 0;
+  }
+
+  const elapsedMinutes = (now - startedAt) / 60_000;
+  return Math.max(0, Math.round(totalTokens / Math.max(elapsedMinutes, 1 / 60)));
 }
 
 function cloneCurrentSessionState(state: CurrentSessionState): CurrentSessionState {

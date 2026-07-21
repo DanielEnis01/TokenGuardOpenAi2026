@@ -38,3 +38,29 @@ test('keeps a stop request visible but returns to running when edits continue', 
   assert.equal(state.lastActivityAt, 3_000);
   assert.equal(state.stopRequestCount, 1);
 });
+
+test('tracks Codex tokens without presenting fallback pricing as a real cost', () => {
+  const store = createSessionStateStore();
+
+  store.applyEvent({
+    type: 'session_start',
+    sessionId: 'session-1',
+    tool: 'codex',
+    timestamp: 1_000,
+    model: 'gpt-5.6-terra',
+  });
+  store.applyEvent({
+    type: 'token_count',
+    sessionId: 'session-1',
+    tool: 'codex',
+    timestamp: 2_000,
+    model: 'gpt-5.6-terra',
+    tokensIn: 1_000,
+    tokensOut: 200,
+  });
+
+  const state = store.getState();
+  assert.equal(state.totalTokens, 1_200);
+  assert.equal(state.sessionCostUsd, 0);
+  assert.equal(state.costEstimateAvailable, false);
+});

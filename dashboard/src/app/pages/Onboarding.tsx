@@ -95,7 +95,7 @@ export default function Onboarding() {
         }}
         onRun={() => void runInstallCommands()}
         title="Install your selected connectors"
-        description="TokenGuard will run the local connector install commands through the daemon after you approve them."
+        description="After you approve, TokenGuard runs the local connector install commands. Selecting Codex also adds the TokenGuard marketplace and installs its Codex plugin."
       />
 
       <div className="w-full max-w-3xl px-6">
@@ -180,7 +180,7 @@ export default function Onboarding() {
 
                     <div className="mt-4 rounded-lg px-3 py-2" style={{ background: 'var(--bg-elevated)' }}>
                       <code style={{ font: 'var(--font-data)', color: 'var(--text-secondary)' }}>
-                        tokenguard connect {tool.id}
+                        {tool.id === 'codex' ? 'Install TokenGuard plugin for Codex' : `tokenguard connect ${tool.id}`}
                       </code>
                     </div>
                   </div>

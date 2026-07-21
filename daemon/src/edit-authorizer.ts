@@ -36,6 +36,7 @@ export function createEditAuthorizer(getConfig: () => GuardrailConfig) {
     authorize(request: EditAuthorizationRequest): EditAuthorizationDecision {
       const config = getConfig();
       const filePaths = normalizeFilePaths(request.filePaths);
+      const requestedEditCounts = countEditsByFile(request.filePaths);
 
       if (filePaths.length === 0) {
         return { allowed: true, reason: null, spiral: null };
@@ -60,7 +61,14 @@ export function createEditAuthorizer(getConfig: () => GuardrailConfig) {
           locked: false,
           spiralReported: false,
         };
-        const timestamps = [...current.timestamps, request.timestamp].filter(
+        // A single Codex exec call can contain a loop with many nested
+        // apply_patch calls. Count each requested patch here so the guard can
+        // reject that batch before its first nested patch is allowed to run.
+        const attemptedEdits = requestedEditCounts.get(filePath) ?? 1;
+        const timestamps = [
+          ...current.timestamps,
+          ...Array.from({ length: attemptedEdits }, () => request.timestamp),
+        ].filter(
           (timestamp) => timestamp >= thresholdStart,
         );
         const editCount = timestamps.length;
@@ -134,4 +142,20 @@ export function createEditAuthorizer(getConfig: () => GuardrailConfig) {
 
 function normalizeFilePaths(filePaths: string[]): string[] {
   return [...new Set(filePaths.map((filePath) => filePath.trim().replaceAll('\\', '/')).filter(Boolean))];
+}
+
+function countEditsByFile(filePaths: string[]): Map<string, number> {
+  const counts = new Map<string, number>();
+
+  for (const filePath of filePaths) {
+    const normalizedPath = filePath.trim().replaceAll('\\', '/');
+
+    if (!normalizedPath) {
+      continue;
+    }
+
+    counts.set(normalizedPath, (counts.get(normalizedPath) ?? 0) + 1);
+  }
+
+  return counts;
 }

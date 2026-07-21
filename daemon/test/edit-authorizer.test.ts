@@ -82,3 +82,20 @@ test('reports but does not block a spiral when automatic stopping is off', () =>
   assert.equal(decision.allowed, true);
   assert.deepEqual(decision.spiral, { filePath: 'src/api/routes.ts', editCount: 3 });
 });
+
+test('blocks a single command that contains a repeated patch batch', () => {
+  const authorizer = createAuthorizer();
+
+  const decision = authorizer.authorize({
+    ...request(1_000),
+    filePaths: [
+      'src/api/routes.ts',
+      'src/api/routes.ts',
+      'src/api/routes.ts',
+    ],
+  });
+
+  assert.equal(decision.allowed, false);
+  assert.match(decision.reason ?? '', /repeated-edit limit/);
+  assert.deepEqual(decision.spiral, { filePath: 'src/api/routes.ts', editCount: 3 });
+});

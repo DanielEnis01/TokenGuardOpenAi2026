@@ -33,6 +33,7 @@ interface DaemonContextValue {
   updateConfig: (patch: Partial<GuardrailConfig>) => Promise<void>;
   resolveSpiral: (filePath: string, decision: 'stop' | 'continue') => Promise<void>;
   stopSession: () => Promise<void>;
+  isRequestingStop: boolean;
   connectTool: (tool: ToolId) => Promise<CliToolActionResult>;
 }
 
@@ -46,6 +47,7 @@ export function DaemonProvider({ children }: { children: ReactNode }) {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
   const [isUsingMockData, setIsUsingMockData] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isRequestingStop, setIsRequestingStop] = useState(false);
 
   const hasConnectedRef = useRef(false);
   const reconnectTimerRef = useRef<number | null>(null);
@@ -338,11 +340,12 @@ export function DaemonProvider({ children }: { children: ReactNode }) {
   );
 
   const stopSession = useCallback(async () => {
-    if (!session.sessionId || !session.tool) {
+    if (!session.sessionId || !session.tool || isRequestingStop) {
       setErrorMessage('No active session is available to stop.');
       return;
     }
 
+    setIsRequestingStop(true);
     try {
       const response = await fetchJson<{ session: CurrentSessionState }>('/interventions/session-stop', {
         method: 'POST',
@@ -362,8 +365,10 @@ export function DaemonProvider({ children }: { children: ReactNode }) {
       hasConnectedRef.current = true;
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Failed to stop the active session.');
+    } finally {
+      setIsRequestingStop(false);
     }
-  }, [session.sessionId, session.tool]);
+  }, [isRequestingStop, session.sessionId, session.tool]);
 
   const connectTool = useCallback(async (tool: ToolId): Promise<CliToolActionResult> => {
     try {
@@ -410,6 +415,7 @@ export function DaemonProvider({ children }: { children: ReactNode }) {
       updateConfig,
       resolveSpiral,
       stopSession,
+      isRequestingStop,
       connectTool,
     }),
     [
@@ -422,6 +428,7 @@ export function DaemonProvider({ children }: { children: ReactNode }) {
       resolveSpiral,
       session,
       stopSession,
+      isRequestingStop,
       updateConfig,
     ],
   );

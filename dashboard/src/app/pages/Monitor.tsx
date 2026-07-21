@@ -10,7 +10,7 @@ import {
   Tooltip,
   ReferenceArea,
 } from 'recharts';
-import { Pencil, Square, Play, AlertTriangle, Check, RotateCcw, Shield, Bot, TimerReset } from 'lucide-react';
+import { Pencil, Square, Play, AlertTriangle, Check, RotateCcw, Shield, Bot, TimerReset, LoaderCircle } from 'lucide-react';
 import { AppShell } from '../components/AppShell';
 import {
   burnSeries,
@@ -34,8 +34,10 @@ export default function Monitor() {
     isUsingMockData,
     resolveSpiral,
     stopSession,
+    isRequestingStop,
   } = useDaemonState();
   const [isSpiralDialogOpen, setIsSpiralDialogOpen] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
   const lastPromptedSpiralRef = useRef<string | null>(null);
 
   const contextPercent = currentSession.contextPercent;
@@ -44,21 +46,41 @@ export default function Monitor() {
   const spiralsStopped = Math.max(0, currentSession.spiralsCaughtToday - currentSession.activeSpirals.length);
   const primaryActiveSpiral = currentSession.activeSpirals[0] ?? null;
   const hasActiveSession = Boolean(currentSession.sessionId);
-  const hasTokenUsage = currentSession.totalTokens > 0;
+  const editsContinuedAfterStopRequest = Boolean(
+    currentSession.lastStopRequestedAt &&
+      currentSession.lastActivityAt &&
+      currentSession.lastActivityAt > currentSession.lastStopRequestedAt,
+  );
+  const awaitingStopConfirmation = Boolean(
+    currentSession.lastStopRequestedAt &&
+      !currentSession.lastStoppedAt &&
+      !editsContinuedAfterStopRequest,
+  );
   const displayedLoopRows = [
     ...currentSession.activeSpirals.map((spiral) => ({
       status: 'active' as const,
       file: spiral.filePath,
       edits: spiral.editCount,
-      timeInLoop: formatDuration(spiral.startedAt, spiral.updatedAt),
+      timeInLoop: formatDuration(spiral.startedAt, now),
       estimatedWaste:
         typeof spiral.estimatedWasteUsd === 'number' ? formatUsd(spiral.estimatedWasteUsd) : '-',
-      action: currentSession.lastStopRequestedAt ? 'Send again' : 'Stop',
+      action: isRequestingStop
+        ? 'Requesting'
+        : awaitingStopConfirmation
+          ? 'Waiting'
+          : editsContinuedAfterStopRequest
+            ? 'Stop again'
+            : 'Stop',
     })),
     ...loopDetectorRows.filter((row) => row.status === 'resolved'),
   ];
   const hasBurnSeries = burnSeries.length > 0;
   const hasTimelineEvents = timelineEvents.length > 0;
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (
@@ -151,17 +173,25 @@ export default function Monitor() {
             connectionStatus={connectionStatus}
             isUsingMockData={isUsingMockData}
             primaryActiveSpiral={primaryActiveSpiral}
+            now={now}
           />
           <SessionActionsPanel
             session={currentSession}
+            isRequestingStop={isRequestingStop}
             onStopAgent={() => void stopSession()}
           />
         </section>
 
-        {currentSession.agentStatus === 'stopped' ? (
+        {isRequestingStop ? (
+          <InterventionBanner
+            tone="warn"
+            title="Requesting stop"
+            description="TokenGuard is sending the request to the local daemon. It will only show a confirmed stop after the daemon observes enforcement."
+          />
+        ) : currentSession.agentStatus === 'stopped' ? (
           <InterventionBanner
             tone="danger"
-            title="Stop enforced"
+            title="Stop confirmed by TokenGuard"
             description={describeStopReason(
               currentSession.lastStopReason,
               currentSession.lastStoppedFilePath,
@@ -170,7 +200,7 @@ export default function Monitor() {
         ) : currentSession.lastStopRequestedAt ? (
           <InterventionBanner
             tone={editsContinuedAfterStopRequest ? 'danger' : 'warn'}
-            title={editsContinuedAfterStopRequest ? 'Edits are continuing after the stop request' : 'Stop requested'}
+            title={editsContinuedAfterStopRequest ? 'Edits continued after the stop request' : 'Waiting for stop confirmation'}
             description={describeStopRequest(
               currentSession.lastStopRequestReason,
               currentSession.lastStopRequestFilePath,
@@ -187,22 +217,18 @@ export default function Monitor() {
 
         <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard
-            label="Tokens This Session"
+            label="Tokens Observed"
             value={formatInteger(currentSession.totalTokens)}
             status={sessionPercent > 90 ? 'danger' : sessionPercent > 70 ? 'warn' : 'default'}
-            detail={
-              hasTokenUsage
-                ? `${formatInteger(currentSession.tokensIn)} in • ${formatInteger(currentSession.tokensOut)} out`
-                : hasActiveSession
-                  ? 'Waiting for token usage from the coding tool'
-                  : 'Waiting for session events'
-            }
+            detail={hasActiveSession ? `+${formatInteger(currentSession.burnRatePerMin)} / min` : 'Waiting for session events'}
           />
           <MetricCard
-            label="Session Cost"
-            value={`$${currentSession.sessionCostUsd.toFixed(2)}`}
+            label="Cost Estimate"
+            value={currentSession.costEstimateAvailable ? `$${currentSession.sessionCostUsd.toFixed(2)}` : '—'}
             status={monthlyPercent > 90 ? 'danger' : monthlyPercent > 70 ? 'warn' : 'default'}
-            detail={currentSession.model ? `Model: ${currentSession.model}` : 'Model will appear when a session starts'}
+            detail={currentSession.costEstimateAvailable
+              ? `Estimated from ${currentSession.model}`
+              : 'No verified pricing available for this model'}
           />
           <MetricCard
             label="Context Window"
@@ -398,11 +424,13 @@ export default function Monitor() {
                             }
                           }}
                           className="rounded-lg px-3 py-1.5"
+                          disabled={isRequestingStop || awaitingStopConfirmation}
                           style={{
                             background: 'rgba(224, 85, 85, 0.12)',
                             color: 'var(--status-danger)',
                             font: 'var(--font-caption)',
-                            opacity: isUsingMockData ? 0.6 : 1,
+                            opacity: isUsingMockData || isRequestingStop || awaitingStopConfirmation ? 0.6 : 1,
+                            cursor: isRequestingStop || awaitingStopConfirmation ? 'not-allowed' : 'pointer',
                           }}
                         >
                           {row.action}
@@ -466,14 +494,17 @@ function LiveSessionPanel({
   connectionStatus,
   isUsingMockData,
   primaryActiveSpiral,
+  now,
 }: {
   session: ReturnType<typeof useDaemonState>['session'];
   connectionStatus: ReturnType<typeof useDaemonState>['connectionStatus'];
   isUsingMockData: boolean;
   primaryActiveSpiral: ReturnType<typeof useDaemonState>['session']['activeSpirals'][number] | null;
+  now: number;
 }) {
   const hasActiveSession = Boolean(session.sessionId);
   const isStopped = session.agentStatus === 'stopped';
+  const stopConfirmed = Boolean(session.lastStoppedAt);
   const editsContinuedAfterStopRequest = Boolean(
     session.lastStopRequestedAt &&
       session.lastActivityAt &&
@@ -492,7 +523,7 @@ function LiveSessionPanel({
         : 'var(--text-muted)';
 
   const statusLabel = isStopped
-    ? 'Stop enforced'
+    ? 'Stop confirmed'
     : editsContinuedAfterStopRequest
       ? 'Edits still running'
       : session.lastStopRequestedAt
@@ -541,10 +572,14 @@ function LiveSessionPanel({
               {hasActiveSession ? 'Current session at a glance' : 'Ready for the next live session'}
             </h2>
             <p className="mt-2" style={{ font: 'var(--font-caption)', color: 'var(--text-secondary)' }}>
-              {primaryActiveSpiral
-                ? `${truncatePath(primaryActiveSpiral.filePath)} is spiraling and needs a decision now.`
+              {stopConfirmed
+                ? 'TokenGuard confirmed the block. It will keep monitoring this connected session for later activity.'
+                : primaryActiveSpiral
+                  ? `${truncatePath(primaryActiveSpiral.filePath)} is spiraling and needs a decision now.`
                 : editsContinuedAfterStopRequest
                   ? 'Codex is still producing edits after TokenGuard requested a stop.'
+                  : session.lastStopRequestedAt
+                    ? 'TokenGuard received the request and is waiting for the daemon to confirm enforcement.'
                 : hasActiveSession
                   ? 'Key session details and quick controls are centralized here.'
                   : 'Launch a session or run a smoke command and TokenGuard will surface live telemetry here.'}
@@ -556,7 +591,9 @@ function LiveSessionPanel({
             <SessionField label="Model" value={session.model ?? 'Waiting for model'} icon={<Shield className="h-4 w-4" />} />
             <SessionField
               label="Runtime"
-              value={session.startedAt ? formatDuration(session.startedAt) : 'Not started'}
+              value={session.startedAt
+                ? formatDuration(session.startedAt, isStopped ? session.lastStoppedAt ?? now : now)
+                : 'Not started'}
               icon={<TimerReset className="h-4 w-4" />}
             />
             <SessionField
@@ -589,22 +626,40 @@ function LiveSessionPanel({
 
 function SessionActionsPanel({
   session,
+  isRequestingStop,
   onStopAgent,
 }: {
   session: ReturnType<typeof useDaemonState>['session'];
+  isRequestingStop: boolean;
   onStopAgent: () => void;
 }) {
   const hasActiveSession = Boolean(session.sessionId);
   const isStopped = session.agentStatus === 'stopped';
   const stopWasRequested = Boolean(session.lastStopRequestedAt);
-  const canRequestStop = hasActiveSession && !isStopped;
+  const editsContinuedAfterStopRequest = Boolean(
+    session.lastStopRequestedAt &&
+      session.lastActivityAt &&
+      session.lastActivityAt > session.lastStopRequestedAt,
+  );
+  const awaitingStopConfirmation = stopWasRequested && !editsContinuedAfterStopRequest;
+  const canRequestStop = hasActiveSession && !isStopped && !isRequestingStop &&
+    (!awaitingStopConfirmation || editsContinuedAfterStopRequest);
+  const stopLabel = isRequestingStop
+    ? 'Requesting stop…'
+    : isStopped
+      ? 'Stop confirmed'
+      : editsContinuedAfterStopRequest
+        ? 'Stop again'
+        : awaitingStopConfirmation
+          ? 'Waiting for confirmation'
+          : 'Stop agent';
 
   return (
     <aside className="liquid-glass-card bento-card flex flex-col rounded-[12px] p-5 sm:p-6">
       <p className="dashboard-page-kicker">Session controls</p>
       <div className="mt-2 grid grid-cols-2 gap-4">
         <QuickStat label="Tokens" value={formatInteger(session.totalTokens)} />
-        <QuickStat label="Cost" value={`$${session.sessionCostUsd.toFixed(2)}`} />
+        <QuickStat label="Est. cost" value={session.costEstimateAvailable ? `$${session.sessionCostUsd.toFixed(2)}` : '—'} />
         <QuickStat label="Burn" value={`${formatInteger(session.burnRatePerMin)}/m`} />
         <QuickStat label="Context" value={`${session.contextPercent}%`} />
       </div>
@@ -623,14 +678,33 @@ function SessionActionsPanel({
             cursor: canRequestStop ? 'pointer' : 'not-allowed',
           }}
         >
-          <div className="grid grid-cols-2 gap-3">
-            <QuickStat label="Tokens" value={formatInteger(session.totalTokens)} />
-            <QuickStat label="Input" value={formatInteger(session.tokensIn)} />
-            <QuickStat label="Output" value={formatInteger(session.tokensOut)} />
-            <QuickStat label="Cost" value={`$${session.sessionCostUsd.toFixed(2)}`} />
-            <QuickStat label="Burn" value={`${formatInteger(session.burnRatePerMin)}/m`} />
-            <QuickStat label="Context" value={`${session.contextPercent}%`} />
-          </div>
+          {isRequestingStop ? <span className="inline-flex items-center gap-2"><LoaderCircle className="h-4 w-4 animate-spin" />{stopLabel}</span> : stopLabel}
+        </button>
+        <p className="mt-3 px-1" style={{ font: 'var(--font-caption)', color: 'var(--text-muted)' }}>
+          {isStopped
+            ? 'Stop confirmed by the daemon. Monitoring remains active for this session.'
+            : awaitingStopConfirmation
+              ? 'Waiting for the daemon to confirm that a later edit was blocked.'
+              : editsContinuedAfterStopRequest
+                ? 'The daemon saw more edits after the first request. You can try again.'
+                : 'A confirmed stop appears only after the daemon blocks a later edit.'}
+        </p>
+        <Link
+          to="/guardrails"
+          className="mt-2 rounded-xl px-4 py-3 text-center"
+          style={{
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-subtle)',
+            color: 'var(--text-primary)',
+            font: 'var(--font-label)',
+          }}
+        >
+          Review guardrails
+        </Link>
+      </div>
+    </aside>
+  );
+}
 
 function ActivityPanel({ hasTimelineEvents }: { hasTimelineEvents: boolean }) {
   return (

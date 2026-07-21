@@ -22,7 +22,7 @@ function createWindow() {
 
   if (isDev) {
     // Load from Vite dev server
-    win.loadURL('http://localhost:5173');
+    win.loadURL('http://localhost:5199');
     win.webContents.openDevTools();
   } else {
     // Load the built Vite output

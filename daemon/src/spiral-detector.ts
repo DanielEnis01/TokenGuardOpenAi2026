@@ -5,6 +5,7 @@ import type {
   SessionEvent,
   SessionStartEvent,
   SpiralStopEvent,
+  SpiralUpdateEvent,
   ToolId,
 } from '../../shared/types.ts';
 
@@ -72,6 +73,20 @@ export function createSpiralDetector(getConfig: () => GuardrailConfig) {
       editCount: timestamps.length,
       tool: event.tool,
     });
+
+    if (existingDetection) {
+      return [
+        {
+          type: 'spiral_update' as const,
+          sessionId: event.sessionId,
+          tool: event.tool,
+          timestamp: event.timestamp,
+          filePath: event.filePath,
+          editCount: timestamps.length,
+          estimatedWasteUsd: null,
+        } satisfies SpiralUpdateEvent,
+      ];
+    }
 
     return [
       {

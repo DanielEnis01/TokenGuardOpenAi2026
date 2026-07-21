@@ -6,7 +6,15 @@ import { fileURLToPath } from 'node:url';
 
 import type { CliToolActionResult } from '../../shared/cli.ts';
 import { getDaemonHttpOrigin } from '../../shared/runtime.ts';
-import { CONNECTABLE_TOOL_IDS, getConnectCommand } from '../../shared/tools.ts';
+import {
+  CODEX_PLUGIN_MARKETPLACE_NAME,
+  CODEX_PLUGIN_MARKETPLACE_REF,
+  CODEX_PLUGIN_MARKETPLACE_REPOSITORY,
+  CODEX_PLUGIN_NAME,
+  CONNECTABLE_TOOL_IDS,
+  getConnectCommand,
+  getToolInstallCommands,
+} from '../../shared/tools.ts';
 import type { ToolConnection, ToolId } from '../../shared/types.ts';
 
 const args = process.argv.slice(2);
@@ -72,7 +80,7 @@ async function connectTool(tool: ToolId): Promise<CliToolActionResult> {
   const commandText = getConnectCommand(tool);
 
   if (tool === 'codex') {
-    return connectCodex(commandText);
+    return connectCodex();
   }
 
   if (tool === 'claude-code') {
@@ -96,26 +104,28 @@ async function connectTool(tool: ToolId): Promise<CliToolActionResult> {
   };
 }
 
-async function connectCodex(commandText: string): Promise<CliToolActionResult> {
+async function connectCodex(): Promise<CliToolActionResult> {
   const codexHome = getCodexHome();
   const sessionIndexPath = join(codexHome, 'session_index.jsonl');
-  const configPath = join(codexHome, 'config.toml');
   const markerPath = join(codexHome, 'tokenguard-connector.json');
+  const pluginInstallCommand = getToolInstallCommands('codex').join(' && ');
 
-  if (!(await fileExists(configPath)) || !(await fileExists(sessionIndexPath))) {
+  const pluginInstall = await installCodexPlugin();
+
+  if (!pluginInstall.success) {
     return {
       success: false,
       tool: 'codex',
-      command: commandText,
-      message: `Codex local session files were not found in ${codexHome}`,
-      stdout: '',
-      stderr: `Missing Codex config.toml or session_index.jsonl in ${codexHome}`,
+      command: pluginInstallCommand,
+      message: 'TokenGuard could not install its Codex plugin.',
+      stdout: pluginInstall.stdout,
+      stderr: pluginInstall.stderr,
       connection: {
         tool: 'codex',
         status: 'error',
-        command: commandText,
+        command: pluginInstallCommand,
         lastSeenAt: null,
-        errorMessage: `Codex local session files were not found in ${codexHome}`,
+        errorMessage: 'TokenGuard could not install its Codex plugin.',
       },
     };
   }
@@ -129,6 +139,10 @@ async function connectCodex(commandText: string): Promise<CliToolActionResult> {
         mode: 'session_log_watcher',
         installedAt: new Date().toISOString(),
         daemonOrigin: getDaemonHttpOrigin(),
+        plugin: {
+          marketplace: CODEX_PLUGIN_MARKETPLACE_NAME,
+          name: CODEX_PLUGIN_NAME,
+        },
       },
       null,
       2,
@@ -139,23 +153,81 @@ async function connectCodex(commandText: string): Promise<CliToolActionResult> {
   return {
     success: true,
     tool: 'codex',
-    command: commandText,
-    message: `Codex connection enabled using local session logs in ${codexHome}`,
+    command: pluginInstallCommand,
+    message: 'TokenGuard plugin installed for Codex. Start a new Codex session to use the plugin hook.',
     stdout: [
-      `Verified Codex config: ${configPath}`,
-      `Verified session index: ${sessionIndexPath}`,
+      pluginInstall.stdout,
       `Wrote TokenGuard marker: ${markerPath}`,
-      `Daemon will watch future Codex sessions and apply_patch edits.`,
+      (await fileExists(sessionIndexPath))
+        ? `Daemon will watch future Codex sessions and apply_patch edits.`
+        : `TokenGuard will begin watching after Codex creates its first local session.`,
     ].join('\n'),
-    stderr: '',
+    stderr: pluginInstall.stderr,
     connection: {
       tool: 'codex',
       status: 'connected',
-      command: commandText,
+      command: pluginInstallCommand,
       lastSeenAt: null,
       errorMessage: null,
     },
   };
+}
+
+async function installCodexPlugin(): Promise<{ success: boolean; stdout: string; stderr: string }> {
+  const commands = [
+    ['plugin', 'marketplace', 'add', CODEX_PLUGIN_MARKETPLACE_REPOSITORY, '--ref', CODEX_PLUGIN_MARKETPLACE_REF],
+    ['plugin', 'add', `${CODEX_PLUGIN_NAME}@${CODEX_PLUGIN_MARKETPLACE_NAME}`],
+  ];
+  const output: string[] = [];
+
+  for (const commandArgs of commands) {
+    const result = await runCodexCommand(commandArgs);
+    output.push(`$ codex ${commandArgs.join(' ')}`);
+    if (result.stdout) {
+      output.push(result.stdout);
+    }
+    if (result.stderr) {
+      output.push(result.stderr);
+    }
+
+    if (!result.success) {
+      return {
+        success: false,
+        stdout: output.join('\n'),
+        stderr: result.stderr || `codex ${commandArgs.join(' ')} failed.`,
+      };
+    }
+  }
+
+  return { success: true, stdout: output.join('\n'), stderr: '' };
+}
+
+async function runCodexCommand(args: string[]): Promise<{ success: boolean; stdout: string; stderr: string }> {
+  return new Promise((resolvePromise) => {
+    const [executable, commandArgs] =
+      process.platform === 'win32'
+        ? ['cmd.exe', ['/d', '/s', '/c', 'codex', ...args]]
+        : ['codex', args];
+    const child = spawn(executable, commandArgs, {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true,
+    });
+    let stdout = '';
+    let stderr = '';
+
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk.toString();
+    });
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk.toString();
+    });
+    child.on('error', (error) => {
+      resolvePromise({ success: false, stdout: stdout.trim(), stderr: error.message });
+    });
+    child.on('close', (exitCode) => {
+      resolvePromise({ success: exitCode === 0, stdout: stdout.trim(), stderr: stderr.trim() });
+    });
+  });
 }
 
 async function connectClaudeCode(commandText: string): Promise<CliToolActionResult> {

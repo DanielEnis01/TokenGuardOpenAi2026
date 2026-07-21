@@ -65,8 +65,12 @@ export default function Tools() {
           setResults([]);
         }}
         onRun={() => void runInstall()}
-        title="Install a local TokenGuard connector"
-        description="Run the selected local connector command."
+        title={activeTool === 'codex' ? 'Install TokenGuard for Codex' : 'Install a local TokenGuard connector'}
+        description={
+          activeTool === 'codex'
+            ? 'After you confirm, TokenGuard adds its Codex marketplace and installs the TokenGuard plugin in Codex on this computer.'
+            : 'Run the selected local connector command.'
+        }
       />
 
       <div className="dashboard-page p-7" style={{ background: 'transparent' }}>

@@ -64,15 +64,24 @@ async function readHookInput() {
 function getPatchCommand(input) {
   const toolInput = input.tool_input;
 
+  if (typeof toolInput === 'string') {
+    return toolInput;
+  }
+
   if (!toolInput || typeof toolInput !== 'object') {
     return '';
   }
 
-  return typeof toolInput.command === 'string'
-    ? toolInput.command
-    : typeof toolInput.patch === 'string'
-      ? toolInput.patch
-      : '';
+  // Codex exposes executable code as `command` in some surfaces and `code`
+  // or `input` in others. Check every supported shape before deciding that a
+  // tool call does not contain a patch.
+  for (const key of ['command', 'patch', 'code', 'input', 'script']) {
+    if (typeof toolInput[key] === 'string') {
+      return toolInput[key];
+    }
+  }
+
+  return '';
 }
 
 function extractPatchFilePaths(command) {
@@ -82,12 +91,15 @@ function extractPatchFilePaths(command) {
     .replaceAll('\\r\\n', '\n')
     .replaceAll('\\n', '\n');
   const pattern = /^\*\*\* (?:Add|Update|Delete) File: (.+)$/gm;
-  const paths = new Set();
+  const paths = [];
   let match;
 
   while ((match = pattern.exec(normalizedCommand)) !== null) {
-    paths.add(match[1].trim().replaceAll('\\', '/'));
+    // Preserve duplicates: several patches to the same file inside one exec
+    // command are exactly the batch-loop pattern TokenGuard must catch before
+    // the command begins.
+    paths.push(match[1].trim().replaceAll('\\', '/'));
   }
 
-  return [...paths];
+  return paths;
 }

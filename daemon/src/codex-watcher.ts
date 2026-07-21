@@ -33,7 +33,6 @@ interface TrackedCodexSession {
   model: string | null;
   source: string | null;
   originator: string | null;
-  initialTokenUsage: CodexTokenUsage | null;
   processedLineCount: number;
   startedEmitted: boolean;
   endedEmitted: boolean;
@@ -209,7 +208,6 @@ export function createCodexWatcher({
     }
 
     const metadata = readSessionMetadata(lines);
-    const initialTokenUsage = readLatestCodexTokenUsage(lines, 'total');
     const transcriptStats = await stat(filePath);
 
     return {
@@ -219,7 +217,6 @@ export function createCodexWatcher({
       model: metadata.model,
       source: metadata.source,
       originator: metadata.originator,
-      initialTokenUsage,
       processedLineCount: lines.length,
       startedEmitted: false,
       endedEmitted: false,
@@ -249,13 +246,30 @@ export function createCodexWatcher({
         const fileWriteEvents = nextLines.flatMap((line) =>
           parseFileWriteEvents(line, trackedSession),
         );
+        const tokenCountEvents = nextLines.flatMap((line) =>
+          parseTokenCountEvents(line, trackedSession),
+        );
+        const nextEvents = [...fileWriteEvents, ...tokenCountEvents].sort(
+          (left, right) => left.timestamp - right.timestamp,
+        );
+
+        if (nextEvents.length > 0) {
+          trackedSession.lastObservedAt = nextEvents[nextEvents.length - 1].timestamp;
+          onEvents(nextEvents);
+        }
 
         if (fileWriteEvents.length > 0) {
-          trackedSession.lastObservedAt = fileWriteEvents[fileWriteEvents.length - 1].timestamp;
-          onEvents(fileWriteEvents);
           log('codex', 'emitted codex file activity', {
             sessionId: trackedSession.sessionId,
             fileWrites: fileWriteEvents.map((event) => event.filePath),
+          });
+        }
+
+        if (tokenCountEvents.length > 0) {
+          log('codex', 'emitted codex token usage', {
+            sessionId: trackedSession.sessionId,
+            tokensIn: tokenCountEvents.reduce((total, event) => total + event.tokensIn, 0),
+            tokensOut: tokenCountEvents.reduce((total, event) => total + event.tokensOut, 0),
           });
         }
       } catch (error) {
@@ -269,34 +283,14 @@ export function createCodexWatcher({
     }
   }
 
-      const fileWriteEvents = nextLines.flatMap((line) =>
-        parseFileWriteEvents(line, trackedSession),
-      );
-      const tokenCountEvents = nextLines.flatMap((line) =>
-        parseTokenCountEvents(line, trackedSession),
-      );
-      const nextEvents = [...fileWriteEvents, ...tokenCountEvents].sort(
-        (left, right) => left.timestamp - right.timestamp,
-      );
+  function discardMissingSession(trackedSession: TrackedCodexSession): void {
+    trackedSessions.delete(trackedSession.sessionId);
+    sessionFileCache.delete(trackedSession.sessionId);
 
-      if (nextEvents.length > 0) {
-        trackedSession.lastObservedAt = nextEvents[nextEvents.length - 1].timestamp;
-        onEvents(nextEvents);
-      }
-
-      if (fileWriteEvents.length > 0) {
-        log('codex', 'emitted codex file activity', {
-          sessionId: trackedSession.sessionId,
-          fileWrites: fileWriteEvents.map((event) => event.filePath),
-        });
-      }
-
-      if (tokenCountEvents.length > 0) {
-        log('codex', 'emitted codex token usage', {
-          sessionId: trackedSession.sessionId,
-          tokensIn: tokenCountEvents.reduce((total, event) => total + event.tokensIn, 0),
-          tokensOut: tokenCountEvents.reduce((total, event) => total + event.tokensOut, 0),
-        });
+    if (trackedSession.cwd) {
+      const cwdKey = normalize(trackedSession.cwd);
+      if (activeSessionByCwd.get(cwdKey) === trackedSession.sessionId) {
+        activeSessionByCwd.delete(cwdKey);
       }
     }
 
@@ -383,23 +377,13 @@ export function createCodexWatcher({
       },
     ]);
 
-    const initialTokenUsage = trackedSession.initialTokenUsage;
-    trackedSession.initialTokenUsage = null;
-
-    if (initialTokenUsage) {
-      onEvents([
-        createTokenCountEvent(trackedSession, initialTokenUsage, trackedSession.lastObservedAt),
-      ]);
-    }
-
     log('codex', 'detected codex session', {
       sessionId: trackedSession.sessionId,
       cwd: trackedSession.cwd,
       model: trackedSession.model,
       source: trackedSession.source,
       originator: trackedSession.originator,
-      tokensIn: initialTokenUsage?.tokensIn ?? 0,
-      tokensOut: initialTokenUsage?.tokensOut ?? 0,
+      tokenBaseline: 'monitoring started at the current transcript position',
     });
   }
 
@@ -590,23 +574,16 @@ function createTokenCountEvent(
   };
 }
 
-function readLatestCodexTokenUsage(
-  lines: string[],
-  kind: 'total',
-): CodexTokenUsage | null {
-  for (const line of [...lines].reverse()) {
-    const usage = parseCodexTokenUsage(safeParseJson(line), kind);
-
-    if (usage) {
-      return usage;
-    }
+export function extractCodexPatchFilePaths(toolName: unknown, toolInput: string): string[] {
+  if (toolName !== 'apply_patch' && toolName !== 'exec') {
+    return [];
   }
 
-  return null;
-}
+  if (toolName === 'exec' && !toolInput.includes('tools.apply_patch')) {
+    return [];
+  }
 
-function extractPatchFilePaths(patchInput: string): string[] {
-  const pattern = /^\*\*\* (?:Add|Update|Delete) File: (.+)$/gm;
+  const pattern = /(?:^|\r?\n|\\n)\*\*\* (?:Add|Update|Delete) File: (.+?)(?=\r?\n|\\n)/g;
   const filePaths = new Set<string>();
   let match: RegExpExecArray | null = null;
 

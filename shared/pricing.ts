@@ -3,11 +3,6 @@ export interface ModelPricing {
   outputUsdPerMillion: number;
 }
 
-const DEFAULT_MODEL_PRICING: ModelPricing = {
-  inputUsdPerMillion: 2,
-  outputUsdPerMillion: 8,
-};
-
 const MODEL_PRICING_MATCHERS: Array<{
   match: string[];
   pricing: ModelPricing;
@@ -30,9 +25,9 @@ const MODEL_PRICING_MATCHERS: Array<{
   },
 ];
 
-export function resolveModelPricing(model: string | null | undefined): ModelPricing {
+export function resolveModelPricing(model: string | null | undefined): ModelPricing | null {
   if (!model) {
-    return DEFAULT_MODEL_PRICING;
+    return null;
   }
 
   const normalizedModel = model.toLowerCase();
@@ -40,15 +35,23 @@ export function resolveModelPricing(model: string | null | undefined): ModelPric
     match.some((pattern) => normalizedModel.includes(pattern)),
   );
 
-  return matchedPricing?.pricing ?? DEFAULT_MODEL_PRICING;
+  return matchedPricing?.pricing ?? null;
+}
+
+export function hasKnownModelPricing(model: string | null | undefined): boolean {
+  return resolveModelPricing(model) !== null;
 }
 
 export function estimateTokenCostUsd(
   model: string | null | undefined,
   tokensIn: number,
   tokensOut: number,
-): number {
+): number | null {
   const pricing = resolveModelPricing(model);
+
+  if (!pricing) {
+    return null;
+  }
 
   return (
     (Math.max(0, tokensIn) / 1_000_000) * pricing.inputUsdPerMillion +

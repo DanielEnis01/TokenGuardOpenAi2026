@@ -599,6 +599,8 @@ function summarizeEvent(event: SessionEvent): string {
       return `token_count session=${event.sessionId} +in=${event.tokensIn} +out=${event.tokensOut} model=${event.model ?? 'unknown'}`;
     case 'spiral_start':
       return `spiral_start session=${event.sessionId} file=${event.filePath} edits=${event.editCount}`;
+    case 'spiral_update':
+      return `spiral_update session=${event.sessionId} file=${event.filePath} edits=${event.editCount}`;
     case 'spiral_stop':
       return `spiral_stop session=${event.sessionId} file=${event.filePath} reason=${event.reason}`;
     case 'budget_threshold':
