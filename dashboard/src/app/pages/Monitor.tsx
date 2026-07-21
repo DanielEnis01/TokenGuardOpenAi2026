@@ -53,8 +53,7 @@ export default function Monitor() {
   );
   const awaitingStopConfirmation = Boolean(
     currentSession.lastStopRequestedAt &&
-      !currentSession.lastStoppedAt &&
-      !editsContinuedAfterStopRequest,
+      !currentSession.lastStoppedAt,
   );
   const displayedLoopRows = [
     ...currentSession.activeSpirals.map((spiral) => ({
@@ -67,10 +66,10 @@ export default function Monitor() {
       action: isRequestingStop
         ? 'Requesting'
         : awaitingStopConfirmation
-          ? 'Waiting'
-          : editsContinuedAfterStopRequest
-            ? 'Stop again'
-            : 'Stop',
+          ? editsContinuedAfterStopRequest
+            ? 'Waiting — retry available'
+            : 'Waiting for confirmation'
+          : 'Stop',
     })),
     ...loopDetectorRows.filter((row) => row.status === 'resolved'),
   ];
@@ -191,16 +190,13 @@ export default function Monitor() {
         ) : currentSession.agentStatus === 'stopped' ? (
           <InterventionBanner
             tone="danger"
-            title="Stop confirmed by TokenGuard"
-            description={describeStopReason(
-              currentSession.lastStopReason,
-              currentSession.lastStoppedFilePath,
-            )}
+            title="Edits blocked by TokenGuard"
+            description={`TokenGuard locked ${currentSession.lastStoppedFilePath ?? 'the active loop file'} so Codex cannot keep changing it. The coding session may still appear open while Codex finishes its current response.`}
           />
         ) : currentSession.lastStopRequestedAt ? (
           <InterventionBanner
             tone={editsContinuedAfterStopRequest ? 'danger' : 'warn'}
-            title={editsContinuedAfterStopRequest ? 'Edits continued after the stop request' : 'Waiting for stop confirmation'}
+            title={editsContinuedAfterStopRequest ? 'Stop pending — edits are still continuing' : 'Waiting for stop confirmation'}
             description={describeStopRequest(
               currentSession.lastStopRequestReason,
               currentSession.lastStopRequestFilePath,
@@ -523,7 +519,7 @@ function LiveSessionPanel({
         : 'var(--text-muted)';
 
   const statusLabel = isStopped
-    ? 'Stop confirmed'
+    ? 'Edits blocked'
     : editsContinuedAfterStopRequest
       ? 'Edits still running'
       : session.lastStopRequestedAt
@@ -573,7 +569,7 @@ function LiveSessionPanel({
             </h2>
             <p className="mt-2" style={{ font: 'var(--font-caption)', color: 'var(--text-secondary)' }}>
               {stopConfirmed
-                ? 'TokenGuard confirmed the block. It will keep monitoring this connected session for later activity.'
+                ? 'TokenGuard has blocked further writes to the loop file. It will keep monitoring the connected session.'
                 : primaryActiveSpiral
                   ? `${truncatePath(primaryActiveSpiral.filePath)} is spiraling and needs a decision now.`
                 : editsContinuedAfterStopRequest
@@ -641,15 +637,15 @@ function SessionActionsPanel({
       session.lastActivityAt &&
       session.lastActivityAt > session.lastStopRequestedAt,
   );
-  const awaitingStopConfirmation = stopWasRequested && !editsContinuedAfterStopRequest;
+  const awaitingStopConfirmation = stopWasRequested && !isStopped;
   const canRequestStop = hasActiveSession && !isStopped && !isRequestingStop &&
     (!awaitingStopConfirmation || editsContinuedAfterStopRequest);
   const stopLabel = isRequestingStop
     ? 'Requesting stop…'
     : isStopped
-      ? 'Stop confirmed'
+      ? 'Edits blocked'
       : editsContinuedAfterStopRequest
-        ? 'Stop again'
+        ? 'Stop pending — retry'
         : awaitingStopConfirmation
           ? 'Waiting for confirmation'
           : 'Stop agent';
@@ -682,12 +678,12 @@ function SessionActionsPanel({
         </button>
         <p className="mt-3 px-1" style={{ font: 'var(--font-caption)', color: 'var(--text-muted)' }}>
           {isStopped
-            ? 'Stop confirmed by the daemon. Monitoring remains active for this session.'
+            ? 'The daemon confirmed the loop file is locked. Codex cannot make another edit to that file.'
             : awaitingStopConfirmation
-              ? 'Waiting for the daemon to confirm that a later edit was blocked.'
-              : editsContinuedAfterStopRequest
-                ? 'The daemon saw more edits after the first request. You can try again.'
-                : 'A confirmed stop appears only after the daemon blocks a later edit.'}
+              ? editsContinuedAfterStopRequest
+                ? 'Stop is still pending. The daemon saw more edits, so you can send another request while it waits for confirmation.'
+                : 'Waiting for the daemon to confirm that a later edit was blocked.'
+              : 'A confirmed stop appears only after the daemon blocks a later edit.'}
         </p>
         <Link
           to="/guardrails"

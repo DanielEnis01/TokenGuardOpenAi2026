@@ -99,3 +99,16 @@ test('blocks a single command that contains a repeated patch batch', () => {
   assert.match(decision.reason ?? '', /repeated-edit limit/);
   assert.deepEqual(decision.spiral, { filePath: 'src/api/routes.ts', editCount: 3 });
 });
+
+test('blocks a repeated edit loop before its first nested patch runs', () => {
+  const authorizer = createAuthorizer();
+
+  const decision = authorizer.authorize({
+    ...request(1_000),
+    containsRepeatedEditLoop: true,
+  });
+
+  assert.equal(decision.allowed, false);
+  assert.match(decision.reason ?? '', /repeated file-edit loop/);
+  assert.deepEqual(decision.spiral, { filePath: 'src/api/routes.ts', editCount: 3 });
+});

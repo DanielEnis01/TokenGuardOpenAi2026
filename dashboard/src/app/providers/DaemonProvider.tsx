@@ -177,6 +177,14 @@ export function DaemonProvider({ children }: { children: ReactNode }) {
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
               finalConfig = docSnap.data() as GuardrailConfig;
+              // A daemon that has been explicitly armed must not be silently
+              // disarmed by an older cloud preference during dashboard load.
+              // The user can still turn protection off deliberately through
+              // the Guardrails toggle, which updates both stores together.
+              if (daemonConfigResponse.config.autoStopSpirals && !finalConfig.autoStopSpirals) {
+                finalConfig = { ...finalConfig, autoStopSpirals: true };
+                await setDoc(docRef, finalConfig);
+              }
               // Sync Firestore config to daemon
               await fetchJson<{ config: GuardrailConfig }>('/config', {
                 method: 'PUT',

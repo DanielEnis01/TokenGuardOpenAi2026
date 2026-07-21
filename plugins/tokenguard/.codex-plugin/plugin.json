@@ -1,6 +1,6 @@
 {
   "name": "tokenguard",
-  "version": "0.1.0+codex.20260721225016",
+  "version": "0.1.0+codex.20260721231320",
   "description": "Prevents repeated Codex edits with live TokenGuard guardrails.",
   "author": {
     "name": "TokenGuard"

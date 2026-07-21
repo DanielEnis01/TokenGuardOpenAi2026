@@ -33,7 +33,7 @@ export function ScrollDashboardReveal() {
       void preview.decode().catch(() => undefined).finally(reveal);
     };
     preview.onerror = reveal;
-    preview.src = '/dashboard-preview.png';
+    preview.src = '/session-telemetry-preview.png';
 
     if (preview.complete) reveal();
 
@@ -73,8 +73,8 @@ export function ScrollDashboardReveal() {
             >
               <div className="dashboard-scroll-bezel">
                 <img
-                  src="/dashboard-preview.png"
-                  alt="TokenGuard dashboard monitoring a live coding session"
+                  src="/session-telemetry-preview.png"
+                  alt="TokenGuard Session telemetry monitor for a live coding session"
                   className="dashboard-scroll-image"
                   draggable={false}
                 />

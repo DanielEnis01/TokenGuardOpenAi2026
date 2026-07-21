@@ -3,6 +3,7 @@ const daemonUrl = process.env.TG_DAEMON_URL ?? 'http://localhost:47291';
 const hookInput = await readHookInput();
 const patchCommand = getPatchCommand(hookInput);
 const filePaths = extractPatchFilePaths(patchCommand);
+const containsRepeatedEditLoop = hasRepeatedEditLoop(patchCommand);
 
 if (filePaths.length === 0 || typeof hookInput.session_id !== 'string') {
   process.exit(0);
@@ -20,6 +21,7 @@ try {
       tool: 'codex',
       model: typeof hookInput.model === 'string' ? hookInput.model : null,
       filePaths,
+      containsRepeatedEditLoop,
     }),
   });
 
@@ -102,4 +104,11 @@ function extractPatchFilePaths(command) {
   }
 
   return paths;
+}
+
+function hasRepeatedEditLoop(command) {
+  // A loop which calls apply_patch from inside the same outer exec is not
+  // interruptible between iterations. Flag it before Codex begins the tool
+  // call, rather than waiting for transcript monitoring to observe damage.
+  return /(?:for\s*\([^)]*\)\s*\{|while\s*\([^)]*\)\s*\{|do\s*\{)[\s\S]{0,20_000}?(?:tools\.)?apply_patch\s*\(/.test(command);
 }
