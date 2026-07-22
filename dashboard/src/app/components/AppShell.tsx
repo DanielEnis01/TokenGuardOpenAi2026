@@ -95,7 +95,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="dashboard-content flex min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="dashboard-scroll flex-1 overflow-y-auto overflow-x-hidden">
           <div className="mx-auto w-full max-w-[1360px] px-4 py-4 sm:px-5 sm:py-5 lg:px-6 lg:py-6">
             {children}
           </div>

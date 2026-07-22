@@ -35,6 +35,9 @@ jobs:
 
       - name: Build Windows installer and portable app
         working-directory: dashboard
+        env:
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
         run: npm run package
 
       - name: Publish release assets

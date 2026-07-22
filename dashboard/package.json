@@ -1,7 +1,7 @@
 {
   "name": "tokenguard-frontend-dashboard",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.0.2",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -93,6 +93,10 @@
     },
     "extraResources": [
       {
+        "from": "build/icon.ico",
+        "to": "icon.ico"
+      },
+      {
         "from": "../daemon/src",
         "to": "daemon/src"
       },
@@ -113,6 +117,7 @@
       }
     ],
     "win": {
+      "icon": "build/icon.ico",
       "target": [
         {
           "target": "nsis",

@@ -2,8 +2,17 @@ const { app, BrowserWindow, shell } = require('electron');
 const { spawn } = require('child_process');
 const path = require('path');
 
-const isDev = process.env.NODE_ENV !== 'production';
+// Only the explicit local development command may use the Vite server or
+// expose DevTools. Treating an incomplete/unpacked install as development
+// leaves users with a blank window when no Vite server is running.
+const isDev = process.env.NODE_ENV === 'development';
 let daemonProcess = null;
+
+function appIconPath() {
+  return isDev
+    ? path.join(__dirname, '../build/icon.ico')
+    : path.join(process.resourcesPath, 'icon.ico');
+}
 
 function daemonEntryPath() {
   return isDev
@@ -64,6 +73,7 @@ function createWindow() {
     minWidth: 900,
     minHeight: 600,
     title: 'TokenGuard Dashboard',
+    icon: appIconPath(),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
