@@ -190,8 +190,11 @@ export default function Monitor() {
         ) : currentSession.agentStatus === 'stopped' ? (
           <InterventionBanner
             tone="danger"
-            title="Edits blocked by TokenGuard"
-            description={`TokenGuard locked ${currentSession.lastStoppedFilePath ?? 'the active loop file'} so Codex cannot keep changing it. The coding session may still appear open while Codex finishes its current response.`}
+            title="Stop confirmed by TokenGuard"
+            description={describeStopReason(
+              currentSession.lastStopReason,
+              currentSession.lastStoppedFilePath,
+            )}
           />
         ) : currentSession.lastStopRequestedAt ? (
           <InterventionBanner
@@ -519,7 +522,7 @@ function LiveSessionPanel({
         : 'var(--text-muted)';
 
   const statusLabel = isStopped
-    ? 'Edits blocked'
+    ? 'Stop confirmed'
     : editsContinuedAfterStopRequest
       ? 'Edits still running'
       : session.lastStopRequestedAt
@@ -569,7 +572,7 @@ function LiveSessionPanel({
             </h2>
             <p className="mt-2" style={{ font: 'var(--font-caption)', color: 'var(--text-secondary)' }}>
               {stopConfirmed
-                ? 'TokenGuard has blocked further writes to the loop file. It will keep monitoring the connected session.'
+                ? 'TokenGuard confirmed the block. It will keep monitoring this connected session for later activity.'
                 : primaryActiveSpiral
                   ? `${truncatePath(primaryActiveSpiral.filePath)} is spiraling and needs a decision now.`
                 : editsContinuedAfterStopRequest
@@ -643,7 +646,7 @@ function SessionActionsPanel({
   const stopLabel = isRequestingStop
     ? 'Requesting stop…'
     : isStopped
-      ? 'Edits blocked'
+      ? 'Stop confirmed'
       : editsContinuedAfterStopRequest
         ? 'Stop pending — retry'
         : awaitingStopConfirmation
@@ -678,7 +681,7 @@ function SessionActionsPanel({
         </button>
         <p className="mt-3 px-1" style={{ font: 'var(--font-caption)', color: 'var(--text-muted)' }}>
           {isStopped
-            ? 'The daemon confirmed the loop file is locked. Codex cannot make another edit to that file.'
+            ? 'Stop confirmed by the daemon. Monitoring remains active for this session.'
             : awaitingStopConfirmation
               ? editsContinuedAfterStopRequest
                 ? 'Stop is still pending. The daemon saw more edits, so you can send another request while it waits for confirmation.'

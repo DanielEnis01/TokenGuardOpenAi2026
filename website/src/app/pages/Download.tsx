@@ -4,10 +4,12 @@ import { useState } from 'react';
 import { SiteNav } from './HowItWorks';
 import './product-pages.css';
 
+const WINDOWS_DOWNLOAD_URL = 'https://github.com/DanielEnis01/TokenGuardOpenAi2026/releases/latest/download/TokenGuard-Setup.exe';
+
 const releases = [
-  { platform: 'Windows', detail: 'Windows 10 or later · x64', size: '84.2 MB', icon: Monitor, status: 'Available now' },
-  { platform: 'macOS', detail: 'macOS 11 or later · Apple Silicon and Intel', size: '92.8 MB', icon: Apple, status: 'Coming soon' },
-  { platform: 'Linux', detail: 'Ubuntu, Debian, and Fedora packages', size: '88.1 MB', icon: Github, status: 'Coming soon' },
+  { platform: 'Windows', detail: 'Windows 10 or later · x64', size: '84.2 MB', icon: Monitor, status: 'Available now', downloadUrl: WINDOWS_DOWNLOAD_URL },
+  { platform: 'macOS', detail: 'macOS 11 or later · Apple Silicon and Intel', size: '92.8 MB', icon: Apple, status: 'Coming soon', downloadUrl: undefined },
+  { platform: 'Linux', detail: 'Ubuntu, Debian, and Fedora packages', size: '88.1 MB', icon: Github, status: 'Coming soon', downloadUrl: undefined },
 ];
 
 export default function DownloadPage() {
@@ -33,7 +35,7 @@ export default function DownloadPage() {
                   <p>{release.detail}</p>
                 </div>
                 {available ? (
-                  <a href="#" className="release-download"><Download className="h-4 w-4" /> Download <ArrowRight className="h-4 w-4" /></a>
+                  <a href={release.downloadUrl} className="release-download"><Download className="h-4 w-4" /> Download <ArrowRight className="h-4 w-4" /></a>
                 ) : (
                   <span className="release-status">{release.status}</span>
                 )}

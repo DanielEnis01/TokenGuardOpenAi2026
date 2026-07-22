@@ -1,0 +1,45 @@
+name: Release Windows app
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out the release tag
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            dashboard/package-lock.json
+            daemon/package-lock.json
+
+      - name: Install dashboard dependencies
+        working-directory: dashboard
+        run: npm ci
+
+      - name: Install daemon dependencies
+        working-directory: daemon
+        run: npm ci
+
+      - name: Build Windows installer and portable app
+        working-directory: dashboard
+        run: npm run package
+
+      - name: Publish release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          gh release create $env:GITHUB_REF_NAME dashboard/release/TokenGuard-Setup.exe dashboard/release/TokenGuard-Portable.exe --generate-notes

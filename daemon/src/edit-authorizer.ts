@@ -5,7 +5,6 @@ export interface EditAuthorizationRequest {
   sessionId: string;
   tool: ToolId;
   filePaths: string[];
-  containsRepeatedEditLoop?: boolean;
   timestamp: number;
 }
 
@@ -48,20 +47,6 @@ export function createEditAuthorizer(getConfig: () => GuardrailConfig) {
           allowed: false,
           reason: 'TokenGuard blocked this edit: this coding session was stopped from the dashboard.',
           spiral: null,
-        };
-      }
-
-      // Codex can run many nested apply_patch calls from one outer exec call.
-      // There is no hook boundary between those nested writes, so reject an
-      // explicit file-edit loop before its first patch begins.
-      if (request.containsRepeatedEditLoop && config.autoStopSpirals) {
-        return {
-          allowed: false,
-          reason: 'TokenGuard blocked this command: it contains a repeated file-edit loop.',
-          spiral: {
-            filePath: filePaths[0],
-            editCount: config.spiralEditThreshold,
-          },
         };
       }
 

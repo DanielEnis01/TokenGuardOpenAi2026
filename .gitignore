@@ -1,6 +1,7 @@
 node_modules/
 **/node_modules/
 daemon/data/
+dashboard/release*/
 .codex-temp/
 .env
 .env.local

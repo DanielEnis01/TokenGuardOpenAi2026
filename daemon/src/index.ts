@@ -13,14 +13,14 @@ import { createDatabase } from './database.ts';
 import { createEditAuthorizer } from './edit-authorizer.ts';
 import { parseSessionEvent } from './events.ts';
 import { createGuardrailEnforcer } from './guardrail-enforcer.ts';
-import { lockFileForEdits } from './file-locker.ts';
 import { createSpiralDetector } from './spiral-detector.ts';
 import { createSessionStateStore } from './session-state.ts';
 import type { GuardrailConfig } from '../../shared/config.ts';
-import { DAEMON_WS_PATH, DEFAULT_DAEMON_PORT } from '../../shared/runtime.ts';
+import { DAEMON_WS_PATH, DEFAULT_DAEMON_HOST, DEFAULT_DAEMON_PORT } from '../../shared/runtime.ts';
 import type { CurrentSessionState, SessionEvent, SpiralResolutionReason, ToolConnection, ToolId } from '../../shared/types.ts';
 
 const port = Number(process.env.TG_DAEMON_PORT ?? DEFAULT_DAEMON_PORT);
+const host = process.env.TG_DAEMON_HOST ?? DEFAULT_DAEMON_HOST;
 const database = createDatabase();
 const sessionStateStore = createSessionStateStore();
 let guardrailConfig = loadGuardrailConfig(database);
@@ -168,7 +168,6 @@ const server = createServer(async (request, response) => {
         tool?: ToolId;
         model?: string | null;
         filePaths?: unknown;
-        containsRepeatedEditLoop?: boolean;
       }>(request);
 
       if (!body.sessionId || body.tool !== 'codex' || !Array.isArray(body.filePaths)) {
@@ -202,7 +201,6 @@ const server = createServer(async (request, response) => {
         sessionId: body.sessionId,
         tool: 'codex',
         filePaths,
-        containsRepeatedEditLoop: body.containsRepeatedEditLoop === true,
         timestamp,
       });
       let session = sessionStateStore.getState();
@@ -382,9 +380,9 @@ webSocketServer.on('connection', (client, request) => {
   });
 });
 
-server.listen(port, () => {
+server.listen({ host, port }, () => {
   logDaemon('startup', 'TokenGuard daemon listening', {
-    httpOrigin: `http://localhost:${port}`,
+    httpOrigin: `http://${host}:${port}`,
     wsPath: DAEMON_WS_PATH,
     config: summarizeConfig(guardrailConfig),
   });
@@ -423,41 +421,6 @@ function processEventQueue(initialEvents: SessionEvent[]): {
     if (haveConnectionsChanged(toolConnections, nextConnections)) {
       toolConnections = nextConnections;
       broadcast('connections_updated', { connections: toolConnections });
-    }
-
-    // A dashboard request must have a real local effect even when a Codex
-    // built-in tool bypasses plugin hooks. Lock every detected loop file
-    // before declaring the intervention enforced.
-    if (currentEvent.type === 'stop_requested' && session.agentStatus !== 'stopped') {
-      const filePaths = [
-        currentEvent.filePath,
-        ...session.activeSpirals.map((spiral) => spiral.filePath),
-      ].filter((filePath): filePath is string => Boolean(filePath));
-      const uniqueFilePaths = [...new Set(filePaths)];
-      const lockedFiles = uniqueFilePaths
-        .map(lockFileForEdits)
-        .filter((result) => result.locked);
-
-      if (lockedFiles.length > 0) {
-        const enforcedEvents = createStopEnforcedEvents(
-          currentEvent.sessionId,
-          currentEvent.tool,
-          currentEvent.timestamp,
-          currentEvent.reason,
-          lockedFiles[0].filePath,
-          session.activeSpirals,
-        );
-        eventQueue.splice(index + 1, 0, ...enforcedEvents);
-        logDaemon('enforcement', 'locked active loop files after stop request', {
-          sessionId: currentEvent.sessionId,
-          files: lockedFiles.map((result) => result.filePath),
-        });
-      } else if (uniqueFilePaths.length > 0) {
-        logDaemon('enforcement', 'could not lock active loop files', {
-          sessionId: currentEvent.sessionId,
-          files: uniqueFilePaths,
-        });
-      }
     }
 
     const enforcementEvents = guardrailEnforcer.processEvent(currentEvent, session);

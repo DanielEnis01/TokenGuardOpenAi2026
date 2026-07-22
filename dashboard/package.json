@@ -91,6 +91,27 @@
     "directories": {
       "output": "release"
     },
+    "extraResources": [
+      {
+        "from": "../daemon/src",
+        "to": "daemon/src"
+      },
+      {
+        "from": "../daemon/node_modules/ws",
+        "to": "daemon/node_modules/ws"
+      },
+      {
+        "from": "../cli/src",
+        "to": "cli/src"
+      },
+      {
+        "from": "../shared",
+        "to": "shared",
+        "filter": [
+          "**/*.ts"
+        ]
+      }
+    ],
     "win": {
       "target": [
         {
@@ -105,8 +126,13 @@
             "x64"
           ]
         }
-      ],
-      "icon": "public/icon.ico"
+      ]
+    },
+    "nsis": {
+      "artifactName": "TokenGuard-Setup.exe"
+    },
+    "portable": {
+      "artifactName": "TokenGuard-Portable.exe"
     }
   },
   "peerDependencies": {
