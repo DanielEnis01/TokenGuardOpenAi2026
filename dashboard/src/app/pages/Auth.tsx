@@ -85,7 +85,7 @@ export default function Auth() {
                 <input type="password" placeholder="Password" className="form-input" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete={isRegistering ? 'new-password' : 'current-password'} required />
               </div>
 
-              {errorMessage ? <p role="alert" style={{ color: 'var(--status-danger)', font: 'var(--font-caption)', textAlign: 'left' }}>{errorMessage}</p> : null}
+              {errorMessage ? <p role="alert" aria-live="polite" style={{ color: 'var(--status-danger)', font: 'var(--font-caption)', textAlign: 'left' }}>{errorMessage}</p> : null}
 
               <button className="sign-in-button" type="submit" disabled={isWorking}>
                 <span className="button-text">{isWorking ? 'Working...' : isRegistering ? 'Create account' : 'Sign in'}</span>
@@ -125,5 +125,9 @@ function getSignInErrorMessage(error: unknown): string {
   if (code === 'auth/invalid-credential' || code === 'auth/wrong-password') return 'The email address or password is incorrect.';
   if (code === 'auth/invalid-email') return 'Enter a valid email address.';
   if (code === 'auth/popup-closed-by-user') return 'Google sign-in was cancelled.';
+  if (code === 'auth/popup-blocked') return 'Google sign-in was blocked. Allow the sign-in window and try again.';
+  if (code === 'auth/operation-not-allowed') return 'This sign-in method has not been enabled in Firebase yet.';
+  if (code === 'auth/unauthorized-domain') return 'This app is not an authorized Firebase sign-in domain yet.';
+  if (code === 'auth/network-request-failed') return 'TokenGuard could not reach Firebase. Check your internet connection and try again.';
   return 'Sign-in failed. Please try again.';
 }
