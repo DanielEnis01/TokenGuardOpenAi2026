@@ -89,7 +89,7 @@
       "electron/**/*"
     ],
     "directories": {
-      "output": "release-final"
+      "output": "release"
     },
     "extraResources": [
       {
