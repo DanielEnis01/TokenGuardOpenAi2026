@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { SiteNav } from './HowItWorks';
 import './product-pages.css';
 
-const WINDOWS_DOWNLOAD_URL = 'https://github.com/DanielEnis01/TokenGuardOpenAi2026/releases/latest/download/TokenGuard-Setup.exe';
+// Pin the public website to the tested desktop release. "latest" can briefly
+// point to an older release while GitHub Actions is still publishing a newer one.
+const WINDOWS_DOWNLOAD_URL = 'https://github.com/DanielEnis01/TokenGuardOpenAi2026/releases/download/v0.0.3/TokenGuard-Setup.exe';
 
 const releases = [
   { platform: 'Windows', detail: 'Windows 10 or later · x64', size: '84.2 MB', icon: Monitor, status: 'Available now', downloadUrl: WINDOWS_DOWNLOAD_URL },
