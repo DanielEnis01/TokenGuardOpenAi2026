@@ -20,6 +20,25 @@ function daemonEntryPath() {
     : path.join(process.resourcesPath, 'daemon/src/index.ts');
 }
 
+function daemonEnvironment() {
+  const inheritedPath = process.env.PATH || process.env.Path || '';
+  const userNpmBin = process.platform === 'win32' && process.env.APPDATA
+    ? path.join(process.env.APPDATA, 'npm')
+    : null;
+  const runtimePath = userNpmBin
+    ? [userNpmBin, inheritedPath].filter(Boolean).join(path.delimiter)
+    : inheritedPath;
+
+  return {
+    ...process.env,
+    PATH: runtimePath,
+    Path: runtimePath,
+    ELECTRON_RUN_AS_NODE: '1',
+    TG_DAEMON_HOST: '127.0.0.1',
+    TG_DAEMON_PORT: '47291',
+  };
+}
+
 function startDaemon() {
   if (daemonProcess && !daemonProcess.killed) {
     return;
@@ -34,12 +53,7 @@ function startDaemon() {
     {
       cwd: app.getPath('userData'),
       windowsHide: true,
-      env: {
-        ...process.env,
-        ELECTRON_RUN_AS_NODE: '1',
-        TG_DAEMON_HOST: '127.0.0.1',
-        TG_DAEMON_PORT: '47291',
-      },
+      env: daemonEnvironment(),
       stdio: isDev ? 'inherit' : 'ignore',
     },
   );
