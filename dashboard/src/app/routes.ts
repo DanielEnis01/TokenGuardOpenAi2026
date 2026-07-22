@@ -27,9 +27,10 @@ function ProtectedLayout() {
   }
 
   if (!user) {
-    // Keep local dashboard work usable before the Firebase project credentials
-    // are supplied. Production remains protected by Firebase authentication.
-    if (firebaseConfigurationError && import.meta.env.DEV) {
+    // The desktop companion is local-first. Firebase is optional: when its
+    // credentials are not packaged, use the dashboard without an account
+    // instead of presenting an unusable sign-in screen.
+    if (firebaseConfigurationError) {
       return React.createElement(Outlet);
     }
     return React.createElement(Navigate, { to: '/auth', replace: true });
@@ -41,7 +42,9 @@ function ProtectedLayout() {
 export const router = createHashRouter([
   {
     path: "/",
-    Component: Auth,
+    Component: firebaseConfigurationError
+      ? () => React.createElement(Navigate, { to: '/monitor', replace: true })
+      : Auth,
   },
   {
     path: "/auth",
