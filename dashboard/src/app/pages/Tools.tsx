@@ -39,6 +39,7 @@ export default function Tools() {
   const [activeTool, setActiveTool] = useState<ToolId | null>(null);
   const [isInstalling, setIsInstalling] = useState(false);
   const [results, setResults] = useState<CliToolActionResult[]>([]);
+  const [connectionNotice, setConnectionNotice] = useState<string | null>(null);
 
   const selectedTools = useMemo(() => (activeTool ? [activeTool] : []), [activeTool]);
 
@@ -51,6 +52,16 @@ export default function Tools() {
     const result = await connectTool(activeTool);
     setResults([result]);
     setIsInstalling(false);
+
+    // The daemon only marks a connector as successful after the command has
+    // completed and returned a successful result. Close the installer then so
+    // the user sees the connected state instead of an install button they can
+    // accidentally press again. Failures intentionally remain in the dialog.
+    if (result.success) {
+      setConnectionNotice(`${formatToolLabel(activeTool)} is installed and connected.`);
+      setActiveTool(null);
+      setResults([]);
+    }
   };
 
   return (
@@ -82,11 +93,23 @@ export default function Tools() {
               {errorMessage}
             </p>
           ) : null}
+          {connectionNotice ? (
+            <p className="mt-2" role="status" aria-live="polite" style={{ font: 'var(--font-caption)', color: 'var(--status-ok)' }}>
+              {connectionNotice}
+            </p>
+          ) : null}
         </div>
 
         <div className="mb-6 grid grid-cols-1 gap-3 xl:grid-cols-2">
           {connections.map((tool) => (
-            <ToolCard key={tool.tool} tool={tool} onConnect={() => setActiveTool(tool.tool)} />
+            <ToolCard
+              key={tool.tool}
+              tool={tool}
+              onConnect={() => {
+                setConnectionNotice(null);
+                setActiveTool(tool.tool);
+              }}
+            />
           ))}
         </div>
 
